@@ -13,6 +13,7 @@ class HomePlayerCard extends StatelessWidget {
     required this.channel,
     required this.title,
     required this.progress,
+    required this.position,
     required this.timeLeft,
     this.totalTime,
     required this.coverShape,
@@ -26,6 +27,7 @@ class HomePlayerCard extends StatelessWidget {
   final String channel;
   final String title;
   final double progress;
+  final Duration position;
   final Duration timeLeft;
   final Duration? totalTime;
   final RoundedPolygon coverShape;
@@ -36,7 +38,10 @@ class HomePlayerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = scheme;
     final TextTheme tt = Theme.of(context).textTheme;
-    final double clampedProgress = progress.clamp(0.0, 1.0);
+
+    final String posStr = position.remainingLabel;
+    final String remainingStr = timeLeft.remainingLabel;
+    final String totalStr = totalTime != null && totalTime!.inSeconds > 0 ? totalTime!.remainingLabel : '--:--';
 
     return Container(
       clipBehavior: .antiAlias,
@@ -89,13 +94,6 @@ class HomePlayerCard extends StatelessWidget {
                       overflow: .ellipsis,
                       style: tt.headlineSmall?.copyWith(color: cs.onPrimary, fontWeight: .w800),
                     ),
-                    if (totalTime != null && totalTime!.inSeconds > 0) ...[
-                      4.gap,
-                      Text(
-                        totalTime!.remainingLabel,
-                        style: tt.labelMedium?.copyWith(color: cs.onPrimary.withValues(alpha: 0.8), fontWeight: FontWeight.w600),
-                      ),
-                    ],
                   ],
                 ),
                 16.gap,
@@ -106,15 +104,13 @@ class HomePlayerCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: .start,
                         children: [
-                          WavyLinearProgressIndicator(
-                            value: clampedProgress,
-                            color: cs.onPrimary,
-                            trackColor: cs.onPrimary.withValues(alpha: 0.25),
-                            stopIndicatorColor: cs.onPrimary,
-                          ),
-                          8.gap,
                           Text(
-                            '${timeLeft.remainingLabel} left',
+                            '$posStr / $totalStr',
+                            style: tt.titleMedium?.copyWith(color: cs.onPrimary, fontWeight: FontWeight.bold),
+                          ),
+                          4.gap,
+                          Text(
+                            'Faltam $remainingStr',
                             style: tt.labelMedium?.copyWith(color: cs.onPrimary.withValues(alpha: 0.8), fontWeight: FontWeight.w600),
                           ),
                         ],

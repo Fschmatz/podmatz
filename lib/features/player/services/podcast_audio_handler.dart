@@ -1,5 +1,6 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
   PodcastAudioHandler() {
@@ -16,20 +17,26 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
 
       playbackState.add(
         playbackState.value.copyWith(
-          controls: [
-            if (playing) MediaControl.pause else MediaControl.play,
-          ],
+          controls: [MediaControl.rewind, if (playing) MediaControl.pause else MediaControl.play, MediaControl.fastForward],
           systemActions: const {
             MediaAction.seek,
+            MediaAction.seekForward,
+            MediaAction.seekBackward,
+            MediaAction.fastForward,
+            MediaAction.rewind,
+            //MediaAction.skipToNext,
+            //MediaAction.skipToPrevious,
           },
-          androidCompactActionIndices: const [0],
-          processingState: const {
-            ProcessingState.idle: AudioProcessingState.idle,
-            ProcessingState.loading: AudioProcessingState.loading,
-            ProcessingState.buffering: AudioProcessingState.buffering,
-            ProcessingState.ready: AudioProcessingState.ready,
-            ProcessingState.completed: AudioProcessingState.completed,
-          }[processingState] ?? AudioProcessingState.idle,
+          androidCompactActionIndices: const [0, 1, 2],
+          processingState:
+              const {
+                ProcessingState.idle: AudioProcessingState.idle,
+                ProcessingState.loading: AudioProcessingState.loading,
+                ProcessingState.buffering: AudioProcessingState.buffering,
+                ProcessingState.ready: AudioProcessingState.ready,
+                ProcessingState.completed: AudioProcessingState.completed,
+              }[processingState] ??
+              AudioProcessingState.idle,
           playing: playing,
           updatePosition: player.position,
           bufferedPosition: player.bufferedPosition,
@@ -39,11 +46,7 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
     });
 
     player.positionStream.listen((position) {
-      playbackState.add(
-        playbackState.value.copyWith(
-          updatePosition: position,
-        ),
-      );
+      playbackState.add(playbackState.value.copyWith(updatePosition: position));
     });
 
     player.durationStream.listen((duration) {
@@ -52,6 +55,11 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
         mediaItem.add(currentItem.copyWith(duration: duration));
       }
     });
+  }
+
+  Future<int> _getSeekIntervalSeconds() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('seek_interval_seconds') ?? 15;
   }
 
   @override
@@ -65,4 +73,25 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> seek(Duration position) => player.seek(position);
+
+  @override
+  Future<void> fastForward() async {
+    final seconds = await _getSeekIntervalSeconds();
+    final newPos = player.position + Duration(seconds: seconds);
+    final duration = player.duration ?? Duration.zero;
+    await player.seek(newPos > duration ? duration : newPos);
+  }
+
+  @override
+  Future<void> rewind() async {
+    final seconds = await _getSeekIntervalSeconds();
+    final newPos = player.position - Duration(seconds: seconds);
+    await player.seek(newPos < Duration.zero ? Duration.zero : newPos);
+  }
+
+  @override
+  Future<void> skipToNext() => fastForward();
+
+  @override
+  Future<void> skipToPrevious() => rewind();
 }

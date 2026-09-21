@@ -121,7 +121,7 @@ class _Body extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      "${AppValues.title} Fschmatz",
+                      AppValues.title,
                       style: Theme.of(
                         context,
                       ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onPrimaryContainer),
@@ -138,42 +138,8 @@ class _Body extends StatelessWidget {
               ),
             ),
             MenuSection(
-              label: 'Biblioteca Local',
+              label: 'Aparência',
               children: [
-                MenuTile(
-                  icon: Icons.folder_outlined,
-                  title: 'Pasta de Podcasts',
-                  subtitle: folderPath,
-                  onTap: () {
-                    locator<AudioPlayerCubit>().pickFolder();
-                  },
-                ),
-                MenuTile(
-                  icon: Icons.refresh_outlined,
-                  title: 'Re-escanear Pasta',
-                  onTap: () {
-                    locator<AudioPlayerCubit>().loadSavedFolder();
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pasta re-escaneada com sucesso.')));
-                  },
-                ),
-              ],
-            ),
-            32.gap,
-            MenuSection(
-              label: 'Preferências do Player',
-              children: [
-                MenuTile(
-                  icon: Icons.timer_outlined,
-                  title: 'Pulo de Tempo (Forward / Rewind)',
-                  subtitle: '${playerState.seekIntervalSeconds} segundos',
-                  onTap: () => _showSeekIntervalDialog(context, playerState.seekIntervalSeconds),
-                ),
-                MenuTile(
-                  icon: Icons.speed_outlined,
-                  title: 'Velocidade de Reprodução',
-                  subtitle: '${playerState.playbackSpeed}x',
-                  onTap: () => _showPlaybackSpeedDialog(context, playerState.playbackSpeed),
-                ),
                 MenuTile(
                   icon: Icons.brightness_6_outlined,
                   title: 'Tema Escuro',
@@ -194,6 +160,58 @@ class _Body extends StatelessWidget {
                       );
                     },
                   ),
+                ),
+                MenuTile(
+                  icon: Icons.folder_copy_outlined,
+                  title: 'Agrupar por Pastas',
+                  subtitle: 'Exibir podcasts por pasta na tela inicial',
+                  trailing: Switch(
+                    value: playerState.groupFoldersView,
+                    onChanged: (val) {
+                      locator<AudioPlayerCubit>().setGroupFoldersView(val);
+                    },
+                  ),
+                ),
+              ],
+            ),
+
+            32.gap,
+            MenuSection(
+              label: 'Player',
+              children: [
+                MenuTile(
+                  icon: Icons.timer_outlined,
+                  title: 'Pulo de Tempo (Forward / Rewind)',
+                  subtitle: '${playerState.seekIntervalSeconds} segundos',
+                  onTap: () => _showSeekIntervalDialog(context, playerState.seekIntervalSeconds),
+                ),
+                MenuTile(
+                  icon: Icons.speed_outlined,
+                  title: 'Velocidade de Reprodução',
+                  subtitle: '${playerState.playbackSpeed}x',
+                  onTap: () => _showPlaybackSpeedDialog(context, playerState.playbackSpeed),
+                ),
+              ],
+            ),
+            32.gap,
+            MenuSection(
+              label: 'Biblioteca',
+              children: [
+                MenuTile(
+                  icon: Icons.folder_outlined,
+                  title: 'Pasta de Podcasts',
+                  subtitle: folderPath,
+                  onTap: () {
+                    locator<AudioPlayerCubit>().pickFolder();
+                  },
+                ),
+                MenuTile(
+                  icon: Icons.refresh_outlined,
+                  title: 'Re-escanear Pasta',
+                  onTap: () {
+                    locator<AudioPlayerCubit>().loadSavedFolder();
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pasta re-escaneada com sucesso.')));
+                  },
                 ),
               ],
             ),

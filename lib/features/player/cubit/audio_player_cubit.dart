@@ -19,6 +19,7 @@ class AudioPlayerState {
     this.isLoading = false,
     this.seekIntervalSeconds = 15,
     this.playbackSpeed = 1.0,
+    this.groupFoldersView = true,
   });
 
   final Episode? currentEpisode;
@@ -30,6 +31,7 @@ class AudioPlayerState {
   final bool isLoading;
   final int seekIntervalSeconds;
   final double playbackSpeed;
+  final bool groupFoldersView;
 
   AudioPlayerState copyWith({
     Episode? currentEpisode,
@@ -41,6 +43,7 @@ class AudioPlayerState {
     bool? isLoading,
     int? seekIntervalSeconds,
     double? playbackSpeed,
+    bool? groupFoldersView,
   }) {
     return AudioPlayerState(
       currentEpisode: currentEpisode ?? this.currentEpisode,
@@ -52,6 +55,7 @@ class AudioPlayerState {
       isLoading: isLoading ?? this.isLoading,
       seekIntervalSeconds: seekIntervalSeconds ?? this.seekIntervalSeconds,
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
+      groupFoldersView: groupFoldersView ?? this.groupFoldersView,
     );
   }
 }
@@ -73,6 +77,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   static const _lastPositionKey = 'last_played_position_seconds';
   static const _lastDurationKey = 'last_played_duration_seconds';
   static const _playbackSpeedKey = 'playback_speed';
+  static const _groupFoldersViewKey = 'group_folders_view';
 
   /// Tracks whether the AudioPlayer has an actual source loaded.
   /// After app restart this is false even if currentEpisode is restored.
@@ -124,7 +129,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
           }
         }
 
-        emit(state.copyWith(duration: dur, episodes: updatedEpisodes, currentEpisode: updatedCurrent));
+        emit(state.copyWith(
+          duration: dur,
+          episodes: updatedEpisodes,
+          currentEpisode: updatedCurrent,
+        ));
 
         if (updatedCurrent != null) {
           _updateMediaItem(updatedCurrent);
@@ -142,6 +151,19 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     loadSavedFolder();
     loadSavedSeekInterval();
     _loadSavedPlaybackSpeed();
+    _loadSavedGroupFoldersView();
+  }
+
+  Future<void> _loadSavedGroupFoldersView() async {
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool(_groupFoldersViewKey) ?? true;
+    emit(state.copyWith(groupFoldersView: enabled));
+  }
+
+  Future<void> setGroupFoldersView(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_groupFoldersViewKey, enabled);
+    emit(state.copyWith(groupFoldersView: enabled));
   }
 
   Future<void> _persistPosition() async {
