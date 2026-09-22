@@ -175,12 +175,9 @@ class _HomePageState extends State<HomePage> {
                                         Container(
                                           width: 40,
                                           height: 40,
-                                          decoration: BoxDecoration(
-                                            color: cs.primaryContainer,
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
+                                          decoration: BoxDecoration(color: cs.primaryContainer, borderRadius: BorderRadius.circular(12)),
                                           child: Icon(
-                                            groupName == 'Arquivos na Raiz' ? Icons.folder_open_rounded : Icons.folder_rounded,
+                                            isExpanded ? Icons.folder_open_rounded : Icons.folder_rounded,
                                             color: cs.onPrimaryContainer,
                                             size: 22,
                                           ),

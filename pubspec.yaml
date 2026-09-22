@@ -1,7 +1,7 @@
 name: podmatz
 description: "Local podcast player made with Flutter."
 publish_to: 'none'
-version: 1.1.0
+version: 1.1.1
 
 environment:
   sdk: ^3.12.2
@@ -18,18 +18,8 @@ dependencies:
   permission_handler: ^11.3.1
   shared_preferences: ^2.3.5
   path: ^1.9.0
-  expressive_sheet:
-    path: packages/expressive_sheet
-  expressive_snack:
-    path: packages/expressive_snack
-  expressive_loading_indicator:
-    path: packages/expressive_loading_indicator
-  expressive_refresh_indicator:
-    path: packages/expressive_refresh_indicator
   material_shapes:
     path: packages/material_shapes
-  material_wavy_progress_indicator:
-    path: packages/material_wavy_progress_indicator
   dynamic_system_colors: ^1.9.0
   just_audio: ^0.10.6
   audio_service: ^0.18.18
