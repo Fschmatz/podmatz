@@ -7,14 +7,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalPodcastService {
-  static const String _prefKeyFolder = 'local_podcast_folder_path';
-
   Future<String?> getSavedFolderPath() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_prefKeyFolder);
+    return PreferencesHelper.getSavedFolderPath();
   }
 
   Future<String?> pickFolder() async {
@@ -27,8 +23,7 @@ class LocalPodcastService {
     final String? selectedDirectory = await FilePicker.getDirectoryPath(dialogTitle: 'Selecione a pasta dos Podcasts');
 
     if (selectedDirectory != null && selectedDirectory.isNotEmpty) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_prefKeyFolder, selectedDirectory);
+      await PreferencesHelper.setSavedFolderPath(selectedDirectory);
       return selectedDirectory;
     }
 
@@ -37,7 +32,6 @@ class LocalPodcastService {
 
   Future<List<Episode>> scanFolder(String folderPath) async {
     final List<Episode> episodes = [];
-    final prefs = await SharedPreferences.getInstance();
     final dir = Directory(folderPath);
 
     if (!await dir.exists()) {
@@ -91,12 +85,15 @@ class LocalPodcastService {
               coverImagePath = folderCoverPath;
             }
 
-            final meta = _extractId3CoverAndDuration(entity, prefs);
+            final meta = await _extractId3CoverAndDuration(entity);
             if (meta.coverBytes != null) {
               coverBytes = meta.coverBytes;
             }
             episodeDuration = meta.duration;
             final String episodeTitle = (meta.title != null && meta.title!.isNotEmpty) ? meta.title! : fileName;
+
+            final int savedPosSec = await PreferencesHelper.getEpisodePositionSeconds(entity.path);
+            final Duration listenedDuration = Duration(seconds: savedPosSec);
 
             episodes.add(
               Episode(
@@ -109,7 +106,7 @@ class LocalPodcastService {
                 image: coverImagePath,
                 imageBytes: coverBytes,
                 total: episodeDuration,
-                listened: Duration.zero,
+                listened: listenedDuration,
                 filePath: entity.path,
               ),
             );
@@ -144,12 +141,12 @@ class LocalPodcastService {
     return null;
   }
 
-  _AudioMetadata _extractId3CoverAndDuration(File file, SharedPreferences prefs) {
+  Future<_AudioMetadata> _extractId3CoverAndDuration(File file) async {
     Uint8List? coverBytes;
     Duration? duration;
     String? title;
 
-    final cachedSec = prefs.getInt('dur_${file.path.hashCode}');
+    final cachedSec = await PreferencesHelper.getCachedDurationSeconds(file.path);
     if (cachedSec != null && cachedSec > 0) {
       duration = Duration(seconds: cachedSec);
     }

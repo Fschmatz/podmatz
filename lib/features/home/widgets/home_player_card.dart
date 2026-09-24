@@ -38,9 +38,9 @@ class HomePlayerCard extends StatelessWidget {
     final ColorScheme cs = scheme;
     final TextTheme tt = Theme.of(context).textTheme;
 
-    final String posStr = position.remainingLabel;
-    final String remainingStr = timeLeft.remainingLabel;
-    final String totalStr = totalTime != null && totalTime!.inSeconds > 0 ? totalTime!.remainingLabel : '--:--';
+    final String posStr = position.minutesLabel;
+    final String remainingStr = timeLeft.minutesLabel;
+    final String totalStr = totalTime != null && totalTime!.inSeconds > 0 ? totalTime!.minutesLabel : '--:--';
 
     return Container(
       clipBehavior: .antiAlias,

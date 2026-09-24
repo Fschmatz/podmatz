@@ -1,6 +1,6 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:podmatz/podmatz.dart';
 
 class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
   PodcastAudioHandler() {
@@ -58,8 +58,7 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<int> _getSeekIntervalSeconds() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt('seek_interval_seconds') ?? 15;
+    return PreferencesHelper.getSeekIntervalSeconds();
   }
 
   @override

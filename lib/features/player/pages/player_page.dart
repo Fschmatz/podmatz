@@ -23,18 +23,21 @@ class _PlayerPageState extends State<PlayerPage> {
 
   @override
   Widget build(BuildContext context) {
-    final Episode pageEpisode = widget.episode;
-    final ColorScheme cs = pageEpisode.scheme(context);
-    final TextTheme tt = Theme.of(context).textTheme;
-
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
       bloc: locator<AudioPlayerCubit>(),
       builder: (context, playerState) {
+        final Episode pageEpisode = playerState.episodes.firstWhere(
+          (ep) => ep.filePath == widget.episode.filePath,
+          orElse: () => widget.episode,
+        );
+        final ColorScheme cs = pageEpisode.scheme(context);
+        final TextTheme tt = Theme.of(context).textTheme;
+
         final bool isCurrent = playerState.currentEpisode?.filePath == pageEpisode.filePath;
         final bool isPlaying = isCurrent && playerState.isPlaying;
 
         final Duration totalDuration = isCurrent && playerState.duration.inSeconds > 0 ? playerState.duration : pageEpisode.total;
-        final Duration currentPos = isCurrent ? playerState.position : Duration.zero;
+        final Duration currentPos = isCurrent ? playerState.position : pageEpisode.listened;
 
         final double maxSeconds = totalDuration.inSeconds > 0 ? totalDuration.inSeconds.toDouble() : 1.0;
         final double currentSeconds = currentPos.inSeconds.toDouble().clamp(0.0, maxSeconds);

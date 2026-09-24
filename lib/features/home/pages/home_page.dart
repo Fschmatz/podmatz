@@ -14,6 +14,7 @@ class _HomePageState extends State<HomePage> {
   String? _openGroupName;
 
   void _openPlayer(BuildContext context, Episode episode) {
+    locator<AudioPlayerCubit>().selectEpisode(episode);
     Navigator.of(context).push(PlayerPage.route(episode));
   }
 

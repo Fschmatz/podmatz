@@ -22,8 +22,10 @@ class _EpisodeCardState extends State<EpisodeCard> {
     final ColorScheme cs = episode.scheme(context);
     final double progress = episode.progress;
 
-    final Color fill = cs.primary;
-    final Color onFill = cs.onPrimary;
+    //final Color fill = cs.primary;
+    //final Color onFill = cs.onPrimary;
+    final Color fill = cs.secondaryContainer;
+    final Color onFill = cs.onSecondaryContainer;
 
     return SingleMotionBuilder(
       motion: const MaterialSpringMotion.standardSpatialFast(),

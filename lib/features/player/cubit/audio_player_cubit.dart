@@ -1,11 +1,9 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:podmatz/podmatz.dart';
 
-import '../../../common/services/local_podcast_service.dart';
 import '../../../../main.dart';
-import '../../home/models/models.dart';
 import '../services/podcast_audio_handler.dart';
 
 class AudioPlayerState {
@@ -73,12 +71,6 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
   AudioPlayer get _audioPlayer => _handler.player;
 
-  static const _lastPlayedKey = 'last_played_file_path';
-  static const _lastPositionKey = 'last_played_position_seconds';
-  static const _lastDurationKey = 'last_played_duration_seconds';
-  static const _playbackSpeedKey = 'playback_speed';
-  static const _groupFoldersViewKey = 'group_folders_view';
-
   /// Tracks whether the AudioPlayer has an actual source loaded.
   /// After app restart this is false even if currentEpisode is restored.
   bool _isSourceLoaded = false;
@@ -99,7 +91,24 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     });
 
     _audioPlayer.positionStream.listen((pos) {
-      emit(state.copyWith(position: pos));
+      final currentPath = state.currentEpisode?.filePath;
+      List<Episode> updatedEpisodes = state.episodes;
+      Episode? updatedCurrent = state.currentEpisode;
+
+      if (currentPath != null) {
+        updatedEpisodes = state.episodes.map((ep) {
+          if (ep.filePath == currentPath) {
+            return ep.copyWith(listened: pos);
+          }
+          return ep;
+        }).toList();
+
+        if (updatedCurrent != null && updatedCurrent.filePath == currentPath) {
+          updatedCurrent = updatedCurrent.copyWith(listened: pos);
+        }
+      }
+
+      emit(state.copyWith(position: pos, episodes: updatedEpisodes, currentEpisode: updatedCurrent));
 
       // Debounce: save position at most every 5 seconds
       final now = DateTime.now();
@@ -129,21 +138,15 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
           }
         }
 
-        emit(state.copyWith(
-          duration: dur,
-          episodes: updatedEpisodes,
-          currentEpisode: updatedCurrent,
-        ));
+        emit(state.copyWith(duration: dur, episodes: updatedEpisodes, currentEpisode: updatedCurrent));
 
         if (updatedCurrent != null) {
           _updateMediaItem(updatedCurrent);
         }
 
         if (currentPath != null) {
-          SharedPreferences.getInstance().then((prefs) {
-            prefs.setInt(_lastDurationKey, dur.inSeconds);
-            prefs.setInt('dur_${currentPath.hashCode}', dur.inSeconds);
-          });
+          PreferencesHelper.setLastDurationSeconds(dur.inSeconds);
+          PreferencesHelper.setCachedDurationSeconds(currentPath, dur.inSeconds);
         }
       }
     });
@@ -155,50 +158,47 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   }
 
   Future<void> _loadSavedGroupFoldersView() async {
-    final prefs = await SharedPreferences.getInstance();
-    final enabled = prefs.getBool(_groupFoldersViewKey) ?? true;
+    final enabled = await PreferencesHelper.getGroupFoldersView();
     emit(state.copyWith(groupFoldersView: enabled));
   }
 
   Future<void> setGroupFoldersView(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_groupFoldersViewKey, enabled);
+    await PreferencesHelper.setGroupFoldersView(enabled);
     emit(state.copyWith(groupFoldersView: enabled));
   }
 
   Future<void> _persistPosition() async {
     _lastPositionSave = DateTime.now();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_lastPositionKey, state.position.inSeconds);
+    await PreferencesHelper.setLastPositionSeconds(state.position.inSeconds);
     if (state.duration.inSeconds > 0) {
-      await prefs.setInt(_lastDurationKey, state.duration.inSeconds);
+      await PreferencesHelper.setLastDurationSeconds(state.duration.inSeconds);
+    }
+    final currentPath = state.currentEpisode?.filePath;
+    if (currentPath != null) {
+      await PreferencesHelper.setEpisodePositionSeconds(currentPath, state.position.inSeconds);
     }
   }
 
   Future<void> loadSavedSeekInterval() async {
-    final prefs = await SharedPreferences.getInstance();
-    final interval = prefs.getInt('seek_interval_seconds') ?? 15;
+    final interval = await PreferencesHelper.getSeekIntervalSeconds();
     emit(state.copyWith(seekIntervalSeconds: interval));
   }
 
   Future<void> setSeekInterval(int seconds) async {
     if (seconds <= 0) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('seek_interval_seconds', seconds);
+    await PreferencesHelper.setSeekIntervalSeconds(seconds);
     emit(state.copyWith(seekIntervalSeconds: seconds));
   }
 
   Future<void> _loadSavedPlaybackSpeed() async {
-    final prefs = await SharedPreferences.getInstance();
-    final speed = prefs.getDouble(_playbackSpeedKey) ?? 1.0;
+    final speed = await PreferencesHelper.getPlaybackSpeed();
     emit(state.copyWith(playbackSpeed: speed));
     await _audioPlayer.setSpeed(speed);
   }
 
   Future<void> setPlaybackSpeed(double speed) async {
     if (speed <= 0) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble(_playbackSpeedKey, speed);
+    await PreferencesHelper.setPlaybackSpeed(speed);
     await _audioPlayer.setSpeed(speed);
     emit(state.copyWith(playbackSpeed: speed));
   }
@@ -206,16 +206,20 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   Future<void> loadSavedFolder() async {
     emit(state.copyWith(isLoading: true));
     final savedPath = await _podcastService.getSavedFolderPath();
+
     if (savedPath != null) {
       final list = await _podcastService.scanFolder(savedPath);
-      final prefs = await SharedPreferences.getInstance();
-      final lastPlayedPath = prefs.getString(_lastPlayedKey);
-      final lastPositionSec = prefs.getInt(_lastPositionKey) ?? 0;
-      final lastDurationSec = prefs.getInt(_lastDurationKey) ?? 0;
+      final lastPlayedPath = await PreferencesHelper.getLastPlayedPath();
+      final lastPositionSec = await PreferencesHelper.getLastPositionSeconds();
+      final lastDurationSec = await PreferencesHelper.getLastDurationSeconds();
 
       Episode? lastPlayed;
       if (lastPlayedPath != null && list.isNotEmpty) {
         lastPlayed = list.cast<Episode?>().firstWhere((e) => e?.filePath == lastPlayedPath, orElse: () => null);
+        if (lastPlayed != null) {
+          final posSec = await PreferencesHelper.getEpisodePositionSeconds(lastPlayed.filePath!);
+          lastPlayed = lastPlayed.copyWith(listened: Duration(seconds: posSec));
+        }
       }
       final restoredDuration = lastDurationSec > 0 ? Duration(seconds: lastDurationSec) : (lastPlayed?.total ?? Duration.zero);
 
@@ -241,12 +245,14 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   /// Inspects uncached episode durations using a temporary player instance
   /// in background without interrupting current playback.
   Future<void> _inspectUncachedDurations(List<Episode> episodes) async {
-    final prefs = await SharedPreferences.getInstance();
-    final uncached = episodes.where((ep) {
-      if (ep.filePath == null) return false;
-      final cachedSec = prefs.getInt('dur_${ep.filePath.hashCode}');
-      return cachedSec == null || cachedSec <= 0;
-    }).toList();
+    final uncached = <Episode>[];
+    for (final ep in episodes) {
+      if (ep.filePath == null) continue;
+      final cachedSec = await PreferencesHelper.getCachedDurationSeconds(ep.filePath!);
+      if (cachedSec == null || cachedSec <= 0) {
+        uncached.add(ep);
+      }
+    }
 
     if (uncached.isEmpty) return;
 
@@ -257,7 +263,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         try {
           final dur = await tempPlayer.setAudioSource(AudioSource.file(episode.filePath!), preload: true);
           if (dur != null && dur.inSeconds > 0) {
-            await prefs.setInt('dur_${episode.filePath.hashCode}', dur.inSeconds);
+            await PreferencesHelper.setCachedDurationSeconds(episode.filePath!, dur.inSeconds);
 
             // Update Cubit state list if episode is still present
             final currentList = state.episodes;
@@ -302,17 +308,28 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
   Future<void> selectEpisode(Episode episode) async {
     if (episode.filePath == null) return;
-    if (state.currentEpisode?.filePath == episode.filePath) return;
+    if (state.currentEpisode?.filePath == episode.filePath) {
+      if (state.position == Duration.zero && episode.listened > Duration.zero) {
+        emit(state.copyWith(position: episode.listened));
+      }
+      return;
+    }
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_lastPlayedKey, episode.filePath!);
-    await prefs.setInt(_lastPositionKey, 0);
+    await _persistPosition();
+
+    await PreferencesHelper.setLastPlayedPath(episode.filePath!);
+    final savedPosSec = await PreferencesHelper.getEpisodePositionSeconds(episode.filePath!);
+    final initialPos = Duration(seconds: savedPosSec) > Duration.zero ? Duration(seconds: savedPosSec) : episode.listened;
+    await PreferencesHelper.setLastPositionSeconds(initialPos.inSeconds);
 
     _isSourceLoaded = false;
     await _audioPlayer.stop();
 
-    emit(state.copyWith(currentEpisode: episode, position: Duration.zero, duration: episode.total, isPlaying: false));
-    _updateMediaItem(episode);
+    final updatedCurrent = episode.copyWith(listened: initialPos);
+
+    emit(state.copyWith(currentEpisode: updatedCurrent, position: initialPos, duration: updatedCurrent.total, isPlaying: false));
+
+    _updateMediaItem(updatedCurrent);
   }
 
   void _updateMediaItem(Episode episode) {
@@ -358,18 +375,23 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       return;
     }
 
-    // Different episode — load new file
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_lastPlayedKey, episode.filePath!);
-    await prefs.setInt(_lastPositionKey, 0);
+    // Different episode — save position of previous episode first
+    await _persistPosition();
 
-    emit(state.copyWith(currentEpisode: episode, position: Duration.zero, duration: episode.total));
+    await PreferencesHelper.setLastPlayedPath(episode.filePath!);
+    final savedPosSec = await PreferencesHelper.getEpisodePositionSeconds(episode.filePath!);
+    final initialPos = Duration(seconds: savedPosSec);
+    await PreferencesHelper.setLastPositionSeconds(initialPos.inSeconds);
+
+    final updatedCurrent = episode.copyWith(listened: initialPos);
+
+    emit(state.copyWith(currentEpisode: updatedCurrent, position: initialPos, duration: updatedCurrent.total));
 
     try {
       _isSourceLoaded = true;
       await _audioPlayer.stop();
-      _updateMediaItem(episode);
-      await _audioPlayer.setAudioSource(AudioSource.file(episode.filePath!));
+      _updateMediaItem(updatedCurrent);
+      await _audioPlayer.setAudioSource(AudioSource.file(episode.filePath!), initialPosition: initialPos > Duration.zero ? initialPos : null);
       if (state.playbackSpeed != 1.0) {
         await _audioPlayer.setSpeed(state.playbackSpeed);
       }
@@ -394,8 +416,27 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   }
 
   Future<void> seek(Duration position) async {
-    emit(state.copyWith(position: position));
+    final currentPath = state.currentEpisode?.filePath;
+    List<Episode> updatedEpisodes = state.episodes;
+    Episode? updatedCurrent = state.currentEpisode;
+
+    if (currentPath != null) {
+      updatedEpisodes = state.episodes.map((ep) {
+        if (ep.filePath == currentPath) {
+          return ep.copyWith(listened: position);
+        }
+        return ep;
+      }).toList();
+
+      if (updatedCurrent != null && updatedCurrent.filePath == currentPath) {
+        updatedCurrent = updatedCurrent.copyWith(listened: position);
+      }
+    }
+
+    emit(state.copyWith(position: position, episodes: updatedEpisodes, currentEpisode: updatedCurrent));
+
     await _audioPlayer.seek(position);
+    await _persistPosition();
   }
 
   Future<void> seekForward() async {

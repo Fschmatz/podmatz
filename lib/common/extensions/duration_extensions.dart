@@ -9,4 +9,13 @@ extension DurationX on Duration {
 
     return '${inSeconds}s';
   }
+
+  /// Compact time label without seconds, e.g. `2h 25m`, `34m`, `0m`.
+  String get minutesLabel {
+    final int h = inHours;
+    final int m = inMinutes.remainder(60);
+
+    if (h > 0) return m > 0 ? '${h}h ${m}m' : '${h}h';
+    return '${m}m';
+  }
 }
