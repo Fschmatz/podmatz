@@ -26,10 +26,7 @@ class _PlayerPageState extends State<PlayerPage> {
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
       bloc: locator<AudioPlayerCubit>(),
       builder: (context, playerState) {
-        final Episode pageEpisode = playerState.episodes.firstWhere(
-          (ep) => ep.filePath == widget.episode.filePath,
-          orElse: () => widget.episode,
-        );
+        final Episode pageEpisode = playerState.episodes.firstWhere((ep) => ep.filePath == widget.episode.filePath, orElse: () => widget.episode);
         final ColorScheme cs = pageEpisode.scheme(context);
         final TextTheme tt = Theme.of(context).textTheme;
 
@@ -52,15 +49,35 @@ class _PlayerPageState extends State<PlayerPage> {
         final Duration speedAdjustedRemaining = Duration(seconds: (remaining.inSeconds / speed).round());
 
         final String timeLabel = ended ? totalDuration.remainingLabel : '-${remaining.remainingLabel}';
-        final String speedTimeLabel = speed != 1.0 && !ended
-            ? '(-${speedAdjustedRemaining.remainingLabel} em ${speed.toStringAsFixed(1)}x)'
-            : '';
+        final String speedTimeLabel = speed != 1.0 && !ended ? '(-${speedAdjustedRemaining.remainingLabel} em ${speed.toStringAsFixed(1)}x)' : '';
+
+        Chapter? currentChapter;
+        if (pageEpisode.chapters.isNotEmpty) {
+          for (final ch in pageEpisode.chapters) {
+            if (displayPos >= ch.startTime) {
+              currentChapter = ch;
+            } else {
+              break;
+            }
+          }
+        }
 
         return Scaffold(
           backgroundColor: cs.surface,
-          appBar: AppBar(backgroundColor: cs.surface, leading: const StyledBackButton()),
+          appBar: AppBar(
+            backgroundColor: cs.surface,
+            leading: const StyledBackButton(),
+            actions: [
+              /* if (pageEpisode.chapters.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.bookmarks_rounded),
+                  tooltip: 'Capítulos',
+                  onPressed: () => ChaptersBottomSheet.show(context, pageEpisode, displayPos, isCurrent),
+                ),*/
+            ],
+          ),
           body: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -71,17 +88,14 @@ class _PlayerPageState extends State<PlayerPage> {
                     children: [
                       Text(
                         pageEpisode.channel.toUpperCase(),
-                        style: tt.labelMedium?.copyWith(color: cs.onSurfaceVariant, fontWeight: FontWeight.w700),
+                        style: tt.labelMedium?.copyWith(color: cs.onSurfaceVariant, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
-                12.gap,
-                Padding(
-                  padding: const EdgeInsets.only(right: 56),
-                  child: Text(
-                    pageEpisode.title,
-                    style: tt.displaySmall?.copyWith(color: cs.primary, fontWeight: FontWeight.w800),
-                  ),
+                8.gap,
+                Text(
+                  pageEpisode.title,
+                  style: tt.displaySmall?.copyWith(color: cs.primary, fontWeight: FontWeight.w800),
                 ),
                 8.gap,
                 Row(
@@ -89,14 +103,20 @@ class _PlayerPageState extends State<PlayerPage> {
                     Icon(Icons.schedule_rounded, size: 16, color: cs.onSurfaceVariant),
                     6.gap,
                     Text(
-                      'Duração total: ${totalDuration.remainingLabel}',
-                      style: tt.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      'Duração: ${totalDuration.remainingLabel}',
+                      style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
+                if (pageEpisode.chapters.isNotEmpty) ...[
+                  12.gap,
+                  CurrentChapterCard(
+                    scheme: cs,
+                    currentChapterTitle: currentChapter?.title,
+                    chaptersCount: pageEpisode.chapters.length,
+                    onTap: () => ChaptersBottomSheet.show(context, pageEpisode, displayPos, isCurrent),
+                  ),
+                ],
                 const Spacer(),
                 Align(
                   alignment: Alignment.bottomRight,
@@ -107,8 +127,8 @@ class _PlayerPageState extends State<PlayerPage> {
                       Text(
                         timeLabel,
                         style: TextStyle(
-                          color: cs.onSurface,
-                          fontSize: 56,
+                          color: cs.tertiary,
+                          fontSize: 55,
                           fontWeight: FontWeight.w700,
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
@@ -116,10 +136,7 @@ class _PlayerPageState extends State<PlayerPage> {
                       if (speedTimeLabel.isNotEmpty)
                         Text(
                           speedTimeLabel,
-                          style: tt.titleMedium?.copyWith(
-                            color: cs.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: tt.titleMedium?.copyWith(color: cs.onSurfaceVariant, fontWeight: FontWeight.w600),
                         ),
                     ],
                   ),

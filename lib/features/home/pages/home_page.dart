@@ -141,6 +141,7 @@ class _HomePageState extends State<HomePage> {
                             child: EpisodeCard(
                               episode: ep,
                               playing: isCurrent && state.isPlaying,
+                              showProgress: state.showCardProgress,
                               onTap: () {
                                 _openPlayer(context, ep);
                               },
@@ -220,6 +221,7 @@ class _HomePageState extends State<HomePage> {
                                       child: EpisodeCard(
                                         episode: ep,
                                         playing: isCurrent && state.isPlaying,
+                                        showProgress: state.showCardProgress,
                                         onTap: () {
                                           _openPlayer(context, ep);
                                         },

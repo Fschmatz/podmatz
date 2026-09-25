@@ -172,6 +172,17 @@ class _Body extends StatelessWidget {
                     },
                   ),
                 ),
+                MenuTile(
+                  icon: Icons.subtitles_outlined,
+                  title: 'Progresso nos Cards',
+                  subtitle: 'Exibir andamento do episódio no fundo dos cards',
+                  trailing: Switch(
+                    value: playerState.showCardProgress,
+                    onChanged: (val) {
+                      locator<AudioPlayerCubit>().setShowCardProgress(val);
+                    },
+                  ),
+                ),
               ],
             ),
 

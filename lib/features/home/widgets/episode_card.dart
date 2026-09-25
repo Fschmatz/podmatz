@@ -1,14 +1,14 @@
 import 'package:podmatz/podmatz.dart';
 import 'package:flutter/material.dart';
-import 'package:material_shapes/material_shapes.dart';
 import 'package:motor/motor.dart';
 
 class EpisodeCard extends StatefulWidget {
-  const EpisodeCard({super.key, required this.episode, required this.playing, required this.onTap});
+  const EpisodeCard({super.key, required this.episode, required this.playing, required this.onTap, this.showProgress});
 
   final Episode episode;
   final bool playing;
   final VoidCallback onTap;
+  final bool? showProgress;
 
   @override
   State<EpisodeCard> createState() => _EpisodeCardState();
@@ -20,12 +20,10 @@ class _EpisodeCardState extends State<EpisodeCard> {
     final Episode episode = widget.episode;
     final bool playing = widget.playing;
     final ColorScheme cs = episode.scheme(context);
-    final double progress = episode.progress;
-
-    //final Color fill = cs.primary;
-    //final Color onFill = cs.onPrimary;
+    final bool showProgress = widget.showProgress ?? locator<AudioPlayerCubit>().state.showCardProgress;
+    final double progress = showProgress ? episode.progress : 0.0;
     final Color fill = cs.secondaryContainer;
-    final Color onFill = cs.onSecondaryContainer;
+    final Color onFill = cs.onSurface;
 
     return SingleMotionBuilder(
       motion: const MaterialSpringMotion.standardSpatialFast(),
@@ -64,30 +62,6 @@ class _EpisodeCardState extends State<EpisodeCard> {
     );
   }
 
-  Widget _trailing(BuildContext context, ColorScheme cs, Color fg) {
-    final Episode episode = widget.episode;
-
-    if (episode.progress >= 1.0) {
-      return Container(
-        width: 30,
-        height: 30,
-        decoration: ShapeDecoration(
-          color: fg,
-          shape: MaterialShapeBorder(shape: MaterialShapes.cookie7Sided),
-        ),
-        child: Icon(Icons.check_rounded, size: 18, color: cs.primary),
-      );
-    }
-
-    final bool started = episode.listened > Duration.zero;
-    final Duration remaining = episode.total - episode.listened;
-
-    return Text(
-      started ? '-${remaining.remainingLabel}' : remaining.remainingLabel,
-      style: TextStyle(color: fg, fontSize: 15, fontWeight: FontWeight.w600, fontFeatures: const [FontFeature.tabularFigures()]),
-    );
-  }
-
   Widget _content(BuildContext context, ColorScheme cs, Color fg) {
     final Episode episode = widget.episode;
     final TextTheme tt = Theme.of(context).textTheme;
@@ -103,8 +77,8 @@ class _EpisodeCardState extends State<EpisodeCard> {
               child: child,
             ),
             child: SizedBox(
-              width: 56,
-              height: 56,
+              width: 62,
+              height: 62,
               child: _Cover(episode: episode, scheme: cs),
             ),
           ),
@@ -117,21 +91,24 @@ class _EpisodeCardState extends State<EpisodeCard> {
                 if (episode.channel.isNotEmpty && episode.channel.toUpperCase() != 'PODCAST LOCAL') ...[
                   Text(
                     episode.channel.toUpperCase(),
-                    style: tt.labelSmall?.copyWith(color: fg, fontWeight: FontWeight.w700),
+                    style: tt.labelSmall?.copyWith(color: fg.withValues(alpha: 0.5), fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 2),
                 ],
                 Text(
                   episode.title,
                   style: tt.titleMedium?.copyWith(color: fg, fontWeight: FontWeight.w700),
-                  maxLines: 3,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  episode.total.remainingLabel,
+                  style: tt.labelSmall?.copyWith(color: fg.withValues(alpha: 0.5), fontWeight: FontWeight.w700),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 16),
-          _trailing(context, cs, fg),
         ],
       ),
     );

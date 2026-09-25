@@ -1,7 +1,7 @@
 name: podmatz
 description: "Local podcast player made with Flutter."
 publish_to: 'none'
-version: 1.1.1
+version: 1.1.4
 
 environment:
   sdk: ^3.12.2

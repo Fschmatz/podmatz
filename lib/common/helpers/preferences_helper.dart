@@ -1,7 +1,30 @@
+import 'dart:convert';
+
+import 'package:podmatz/podmatz.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../values/app_values.dart';
 
 class PreferencesHelper {
+  /// Returns the cached episode list from the last scan, if available.
+  static Future<List<Episode>> getCachedEpisodes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString(AppValues.prefKeyCachedEpisodes);
+    if (jsonStr == null || jsonStr.isEmpty) return [];
+    try {
+      final List<dynamic> list = jsonDecode(jsonStr) as List<dynamic>;
+      return list.map((e) => Episode.fromJson(e as Map<String, dynamic>)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Caches the episode list as JSON after a scan.
+  static Future<void> setCachedEpisodes(List<Episode> episodes) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = jsonEncode(episodes.map((e) => e.toJson()).toList());
+    await prefs.setString(AppValues.prefKeyCachedEpisodes, jsonStr);
+  }
+
   /// Returns the saved local podcast folder path, if any.
   static Future<String?> getSavedFolderPath() async {
     final prefs = await SharedPreferences.getInstance();
@@ -108,6 +131,18 @@ class PreferencesHelper {
   static Future<void> setGroupFoldersView(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(AppValues.prefKeyGroupFoldersView, enabled);
+  }
+
+  /// Returns whether card progress view is enabled (default: true).
+  static Future<bool> getShowCardProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(AppValues.prefKeyShowCardProgress) ?? true;
+  }
+
+  /// Saves the card progress setting.
+  static Future<void> setShowCardProgress(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(AppValues.prefKeyShowCardProgress, enabled);
   }
 
   /// Returns whether dark mode is enabled (default: false).

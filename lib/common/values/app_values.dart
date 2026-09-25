@@ -1,7 +1,7 @@
 abstract final class AppValues {
   static String get title => 'Podmatz';
 
-  static String get version => '1.1.2';
+  static String get version => '1.1.4';
 
   static String get nomePastaRaiz => 'Vários';
 
@@ -13,6 +13,8 @@ abstract final class AppValues {
   static const String prefKeySeekIntervalSec = 'seek_interval_seconds';
   static const String prefKeyPlaybackSpeed = 'playback_speed';
   static const String prefKeyGroupFoldersView = 'group_folders_view';
+  static const String prefKeyShowCardProgress = 'show_card_progress';
+  static const String prefKeyCachedEpisodes = 'cached_episodes';
   static const String prefKeyThemeModeDark = 'theme_mode_dark';
 
   static String prefEpisodePosKey(String path) => 'pos_${path.hashCode}';
