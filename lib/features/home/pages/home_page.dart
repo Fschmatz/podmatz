@@ -14,7 +14,6 @@ class _HomePageState extends State<HomePage> {
   String? _openGroupName;
 
   void _openPlayer(BuildContext context, Episode episode) {
-    locator<AudioPlayerCubit>().selectEpisode(episode);
     Navigator.of(context).push(PlayerPage.route(episode));
   }
 
@@ -97,9 +96,11 @@ class _HomePageState extends State<HomePage> {
               if (playing != null)
                 Builder(
                   builder: (context) {
-                    final Duration totalDur = state.duration.inSeconds > 0 ? state.duration : playing.total;
-                    final Duration remaining = totalDur > state.position ? totalDur - state.position : Duration.zero;
-                    final double cardProgress = totalDur.inSeconds > 0 ? (state.position.inSeconds / totalDur.inSeconds).clamp(0.0, 1.0) : 0.0;
+                    final bool isCurrentCard = state.currentEpisode?.filePath == playing.filePath;
+                    final Duration currentPos = isCurrentCard && state.position.inSeconds > 0 ? state.position : playing.listened;
+                    final Duration totalDur = isCurrentCard && state.duration.inSeconds > 0 ? state.duration : playing.total;
+                    final Duration remaining = totalDur > currentPos ? totalDur - currentPos : Duration.zero;
+                    final double cardProgress = totalDur.inSeconds > 0 ? (currentPos.inSeconds / totalDur.inSeconds).clamp(0.0, 1.0) : 0.0;
 
                     return Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -112,7 +113,7 @@ class _HomePageState extends State<HomePage> {
                           channel: playing.channel,
                           title: playing.title,
                           progress: cardProgress,
-                          position: state.position,
+                          position: currentPos,
                           timeLeft: remaining,
                           totalTime: totalDur,
                           coverShape: ShapeValues.coverFocused,
@@ -160,76 +161,84 @@ class _HomePageState extends State<HomePage> {
 
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                InkWell(
-                                  onTap: () {
-                                    setState(() {
-                                      _openGroupName = isExpanded ? null : groupName;
-                                    });
-                                  },
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 40,
-                                          height: 40,
-                                          decoration: BoxDecoration(color: cs.primaryContainer, borderRadius: BorderRadius.circular(12)),
-                                          child: Icon(
-                                            isExpanded ? Icons.folder_open_rounded : Icons.folder_rounded,
-                                            color: cs.onPrimaryContainer,
-                                            size: 22,
+                            child: Container(
+                              decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(20)),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        _openGroupName = isExpanded ? null : groupName;
+                                      });
+                                    },
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 40,
+                                            height: 40,
+                                            decoration: BoxDecoration(color: cs.primaryContainer, borderRadius: BorderRadius.circular(12)),
+                                            child: Icon(
+                                              isExpanded ? Icons.folder_open_rounded : Icons.folder_rounded,
+                                              color: cs.onPrimaryContainer,
+                                              size: 22,
+                                            ),
                                           ),
-                                        ),
-                                        12.gap,
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                groupName,
-                                                style: Theme.of(
-                                                  context,
-                                                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              Text(
-                                                '${groupList.length} ${groupList.length == 1 ? 'episódio' : 'episódios'}',
-                                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                                              ),
-                                            ],
+                                          12.gap,
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  groupName,
+                                                  style: Theme.of(
+                                                    context,
+                                                  ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                Text(
+                                                  '${groupList.length} ${groupList.length == 1 ? 'episódio' : 'episódios'}',
+                                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        Icon(
-                                          isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                                          color: cs.onSurfaceVariant,
-                                        ),
-                                      ],
+                                          Icon(
+                                            isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                                            color: cs.onSurfaceVariant,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                                if (isExpanded) ...[
-                                  8.gap,
-                                  ...groupList.map((ep) {
-                                    final bool isCurrent = state.currentEpisode?.filePath == ep.filePath;
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 8),
-                                      child: EpisodeCard(
-                                        episode: ep,
-                                        playing: isCurrent && state.isPlaying,
-                                        showProgress: state.showCardProgress,
-                                        onTap: () {
-                                          _openPlayer(context, ep);
-                                        },
+                                  if (isExpanded) ...[
+                                    SizedBox(height: 8),
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                                      child: Column(
+                                        children: groupList.map((ep) {
+                                          final bool isCurrent = state.currentEpisode?.filePath == ep.filePath;
+                                          return Padding(
+                                            padding: const EdgeInsets.only(bottom: 12),
+                                            child: EpisodeCard(
+                                              episode: ep,
+                                              playing: isCurrent && state.isPlaying,
+                                              showProgress: state.showCardProgress,
+                                              onTap: () {
+                                                _openPlayer(context, ep);
+                                              },
+                                            ),
+                                          );
+                                        }).toList(),
                                       ),
-                                    );
-                                  }),
+                                    ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
                           );
                         },

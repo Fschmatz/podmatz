@@ -32,7 +32,7 @@ class _EpisodeCardState extends State<EpisodeCard> {
         final double radius = 24 + (40 - 24) * t;
         return Container(
           clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(color: cs.surfaceContainerHigh, borderRadius: BorderRadius.circular(radius < 0 ? 0 : radius)),
+          decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(radius < 0 ? 0 : radius)),
           child: child,
         );
       },
@@ -102,9 +102,21 @@ class _EpisodeCardState extends State<EpisodeCard> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  episode.total.remainingLabel,
-                  style: tt.labelSmall?.copyWith(color: fg.withValues(alpha: 0.5), fontWeight: FontWeight.w700),
+                Builder(
+                  builder: (_) {
+                    final String totalStr = episode.total.inSeconds > 0 ? episode.total.minutesLabel : '--:--';
+                    final String timeText;
+                    if (episode.listened.inSeconds > 0) {
+                      final String posStr = episode.listened.minutesLabel;
+                      timeText = '$posStr / $totalStr';
+                    } else {
+                      timeText = totalStr;
+                    }
+                    return Text(
+                      timeText,
+                      style: tt.labelSmall?.copyWith(color: fg.withValues(alpha: 0.5), fontWeight: FontWeight.w700),
+                    );
+                  },
                 ),
               ],
             ),

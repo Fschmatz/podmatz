@@ -42,7 +42,7 @@ class _PlayerPageState extends State<PlayerPage> {
 
         final Duration displayPos = Duration(seconds: sliderValue.toInt());
         final Duration remaining = totalDuration - displayPos;
-        final bool ended = remaining <= Duration.zero;
+        final bool ended = totalDuration.inSeconds > 0 && displayPos >= totalDuration;
 
         // Calculate time left accounting for playback speed (e.g. 1.2x)
         final double speed = playerState.playbackSpeed > 0 ? playerState.playbackSpeed : 1.0;
@@ -100,10 +100,10 @@ class _PlayerPageState extends State<PlayerPage> {
                 8.gap,
                 Row(
                   children: [
-                    Icon(Icons.schedule_rounded, size: 16, color: cs.onSurfaceVariant),
-                    6.gap,
+                    /*   Icon(Icons.schedule_rounded, size: 16, color: cs.onSurfaceVariant),
+                    6.gap,*/
                     Text(
-                      'Duração: ${totalDuration.remainingLabel}',
+                      displayPos.inSeconds > 0 ? '${displayPos.minutesLabel} / ${totalDuration.minutesLabel}' : totalDuration.minutesLabel,
                       style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant, fontWeight: FontWeight.w600),
                     ),
                   ],
@@ -124,13 +124,18 @@ class _PlayerPageState extends State<PlayerPage> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        timeLabel,
-                        style: TextStyle(
-                          color: cs.tertiary,
-                          fontSize: 55,
-                          fontWeight: FontWeight.w700,
-                          fontFeatures: const [FontFeature.tabularFigures()],
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+                        child: Text(
+                          timeLabel,
+                          key: ValueKey(timeLabel),
+                          style: TextStyle(
+                            color: cs.tertiary,
+                            fontSize: 55,
+                            fontWeight: FontWeight.w700,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
                         ),
                       ),
                       if (speedTimeLabel.isNotEmpty)

@@ -49,18 +49,6 @@ class PreferencesHelper {
     await prefs.setString(AppValues.prefKeyLastPlayedPath, path);
   }
 
-  /// Returns the last playback position in seconds.
-  static Future<int> getLastPositionSeconds() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(AppValues.prefKeyLastPositionSec) ?? 0;
-  }
-
-  /// Saves the last playback position in seconds.
-  static Future<void> setLastPositionSeconds(int seconds) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(AppValues.prefKeyLastPositionSec, seconds);
-  }
-
   /// Returns the last playback duration in seconds.
   static Future<int> getLastDurationSeconds() async {
     final prefs = await SharedPreferences.getInstance();
