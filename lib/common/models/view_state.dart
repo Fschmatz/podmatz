@@ -1,5 +1,3 @@
-import 'dart:developer' as logarte;
-
 import 'package:flutter/foundation.dart';
 
 sealed class ViewState<T> {
@@ -15,7 +13,7 @@ sealed class ViewState<T> {
       }
 
       return ViewReady<T>(result);
-    } catch (error, stackTrace) {
+    } catch (error) {
       onError?.call();
 
       return ViewFailed<T>();

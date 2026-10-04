@@ -21,6 +21,7 @@ class _EpisodeCardState extends State<EpisodeCard> {
     final bool playing = widget.playing;
     final ColorScheme cs = episode.scheme(context);
     final bool showProgress = widget.showProgress ?? locator<AudioPlayerCubit>().state.showCardProgress;
+    final bool showCover = locator<AudioPlayerCubit>().state.showEpisodeCover;
     final double progress = showProgress ? episode.progress : 0.0;
     final Color fill = cs.secondaryContainer;
     final Color onFill = cs.onSurface;
@@ -32,7 +33,7 @@ class _EpisodeCardState extends State<EpisodeCard> {
         final double radius = 24 + (40 - 24) * t;
         return Container(
           clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(radius < 0 ? 0 : radius)),
+          decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(radius < 0 ? 0 : radius)),
           child: child,
         );
       },
@@ -44,11 +45,11 @@ class _EpisodeCardState extends State<EpisodeCard> {
               child: ColoredBox(color: fill),
             ),
           ),
-          _content(context, cs, cs.onSurface),
+          _content(context, cs, cs.onSurface, showCover),
           Positioned.fill(
             child: ClipRect(
               clipper: _FillClipper(start: _kFillStart, fraction: progress),
-              child: _content(context, cs, onFill),
+              child: _content(context, cs, onFill, showCover),
             ),
           ),
           Positioned.fill(
@@ -62,27 +63,31 @@ class _EpisodeCardState extends State<EpisodeCard> {
     );
   }
 
-  Widget _content(BuildContext context, ColorScheme cs, Color fg) {
+  Widget _content(BuildContext context, ColorScheme cs, Color fg, bool showCover) {
     final Episode episode = widget.episode;
     final TextTheme tt = Theme.of(context).textTheme;
+    final double cardPadding = showCover ? 12 : 16;
+
     return Padding(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(cardPadding),
       child: Row(
         children: [
-          SingleMotionBuilder(
-            motion: const MaterialSpringMotion.standardSpatialFast(),
-            value: widget.playing ? 1.0 : 0.0,
-            builder: (context, t, child) => ClipPath(
-              clipper: ShapeBorderClipper(shape: ShapeValues.coverBorder(t)),
-              child: child,
+          if (showCover) ...[
+            SingleMotionBuilder(
+              motion: const MaterialSpringMotion.standardSpatialFast(),
+              value: widget.playing ? 1.0 : 0.0,
+              builder: (context, t, child) => ClipPath(
+                clipper: ShapeBorderClipper(shape: ShapeValues.coverBorder(t)),
+                child: child,
+              ),
+              child: SizedBox(
+                width: 62,
+                height: 62,
+                child: _Cover(episode: episode, scheme: cs),
+              ),
             ),
-            child: SizedBox(
-              width: 62,
-              height: 62,
-              child: _Cover(episode: episode, scheme: cs),
-            ),
-          ),
-          const SizedBox(width: 14),
+            const SizedBox(width: 14),
+          ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

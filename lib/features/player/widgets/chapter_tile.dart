@@ -24,7 +24,7 @@ class ChapterTile extends StatelessWidget {
         leading: Container(
           width: 36,
           height: 36,
-          decoration: BoxDecoration(color: isActive ? cs.primary : cs.surfaceContainerHigh, shape: BoxShape.circle),
+          decoration: BoxDecoration(color: isActive ? cs.primary : cs.surfaceContainerHighest, shape: BoxShape.circle),
           child: Center(
             child: Text(
               '${index + 1}',

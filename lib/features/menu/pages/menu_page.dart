@@ -183,6 +183,17 @@ class _Body extends StatelessWidget {
                     },
                   ),
                 ),
+                MenuTile(
+                  icon: Icons.image_outlined,
+                  title: 'Capa nos Cards',
+                  subtitle: 'Exibir a capa do episódio nos cards',
+                  trailing: Switch(
+                    value: playerState.showEpisodeCover,
+                    onChanged: (val) {
+                      locator<AudioPlayerCubit>().setShowEpisodeCover(val);
+                    },
+                  ),
+                ),
               ],
             ),
 
@@ -201,6 +212,17 @@ class _Body extends StatelessWidget {
                   title: 'Velocidade de Reprodução',
                   subtitle: '${playerState.playbackSpeed}x',
                   onTap: () => _showPlaybackSpeedDialog(context, playerState.playbackSpeed),
+                ),
+                MenuTile(
+                  icon: Icons.volume_off_outlined,
+                  title: 'Pular Silêncio',
+                  subtitle: 'Remover trechos silenciosos automaticamente',
+                  trailing: Switch(
+                    value: playerState.skipSilence,
+                    onChanged: (val) {
+                      locator<AudioPlayerCubit>().setSkipSilence(val);
+                    },
+                  ),
                 ),
               ],
             ),

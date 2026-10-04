@@ -12,6 +12,45 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String? _openGroupName;
+  final ScrollController _scrollController = ScrollController();
+  double? _lockedScrollOffset;
+  bool _suppressScrollLock = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  /// Keeps the scroll position locked while a group is animating open/closed.
+  /// Prevents ListView from drifting when item heights change mid-layout.
+  void _onScroll() {
+    if (_lockedScrollOffset == null || !_scrollController.hasClients || _suppressScrollLock) return;
+    final target = _lockedScrollOffset!;
+    if ((_scrollController.offset - target).abs() > 0.5) {
+      _suppressScrollLock = true;
+      _scrollController.jumpTo(target.clamp(_scrollController.position.minScrollExtent, _scrollController.position.maxScrollExtent));
+      _suppressScrollLock = false;
+    }
+  }
+
+  void _toggleGroup(String groupName) {
+    final isExpanded = _openGroupName == groupName;
+    // Lock the scroll at the current position before the expansion
+    _lockedScrollOffset = _scrollController.hasClients ? _scrollController.offset : null;
+    setState(() => _openGroupName = isExpanded ? null : groupName);
+    // Release the lock after the animation finishes
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (mounted) _lockedScrollOffset = null;
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   void _openPlayer(BuildContext context, Episode episode) {
     Navigator.of(context).push(PlayerPage.route(episode));
@@ -24,7 +63,7 @@ class _HomePageState extends State<HomePage> {
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
       bloc: locator<AudioPlayerCubit>(),
       builder: (context, state) {
-        final List<Episode> episodes = state.episodes;
+        final List<Episode> episodes = [...state.episodes]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
         final Episode? playing = state.currentEpisode ?? (episodes.isNotEmpty ? episodes.first : null);
 
         if (state.isLoading) {
@@ -151,27 +190,24 @@ class _HomePageState extends State<HomePage> {
                         },
                       )
                     : ListView.builder(
+                        controller: _scrollController,
                         scrollCacheExtent: ScrollCacheExtent.pixels(600.0),
                         padding: EdgeInsets.fromLTRB(16, 0, 16, BottomPadding.of(context) + 16),
                         itemCount: sortedGroupKeys.length,
                         itemBuilder: (context, groupIndex) {
                           final groupName = sortedGroupKeys[groupIndex];
-                          final groupList = groupedEpisodes[groupName]!;
+                          final groupList = [...groupedEpisodes[groupName]!]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
                           final bool isExpanded = _openGroupName == groupName;
 
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: Container(
-                              decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(20)),
+                              decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(20)),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   InkWell(
-                                    onTap: () {
-                                      setState(() {
-                                        _openGroupName = isExpanded ? null : groupName;
-                                      });
-                                    },
+                                    onTap: () => _toggleGroup(groupName),
                                     borderRadius: BorderRadius.circular(20),
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
@@ -207,36 +243,43 @@ class _HomePageState extends State<HomePage> {
                                               ],
                                             ),
                                           ),
-                                          Icon(
-                                            isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                                            color: cs.onSurfaceVariant,
+                                          AnimatedRotation(
+                                            turns: isExpanded ? 0.5 : 0.0,
+                                            duration: const Duration(milliseconds: 300),
+                                            curve: Curves.easeInOut,
+                                            child: Icon(Icons.keyboard_arrow_down_rounded, color: cs.onSurfaceVariant),
                                           ),
                                         ],
                                       ),
                                     ),
                                   ),
-                                  if (isExpanded) ...[
-                                    SizedBox(height: 8),
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                                      child: Column(
-                                        children: groupList.map((ep) {
-                                          final bool isCurrent = state.currentEpisode?.filePath == ep.filePath;
-                                          return Padding(
-                                            padding: const EdgeInsets.only(bottom: 12),
-                                            child: EpisodeCard(
-                                              episode: ep,
-                                              playing: isCurrent && state.isPlaying,
-                                              showProgress: state.showCardProgress,
-                                              onTap: () {
-                                                _openPlayer(context, ep);
-                                              },
-                                            ),
-                                          );
-                                        }).toList(),
+                                  ClipRect(
+                                    child: AnimatedAlign(
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                      alignment: Alignment.topCenter,
+                                      heightFactor: isExpanded ? 1.0 : 0.0,
+                                      child: Padding(
+                                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                                        child: Column(
+                                          children: groupList.map((ep) {
+                                            final bool isCurrent = state.currentEpisode?.filePath == ep.filePath;
+                                            return Padding(
+                                              padding: const EdgeInsets.only(bottom: 12),
+                                              child: EpisodeCard(
+                                                episode: ep,
+                                                playing: isCurrent && state.isPlaying,
+                                                showProgress: state.showCardProgress,
+                                                onTap: () {
+                                                  _openPlayer(context, ep);
+                                                },
+                                              ),
+                                            );
+                                          }).toList(),
+                                        ),
                                       ),
                                     ),
-                                  ],
+                                  ),
                                 ],
                               ),
                             ),

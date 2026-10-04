@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:podmatz/podmatz.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../values/app_values.dart';
 
 class PreferencesHelper {
   /// Returns the cached episode list from the last scan, if available.
@@ -133,6 +132,18 @@ class PreferencesHelper {
     await prefs.setBool(AppValues.prefKeyShowCardProgress, enabled);
   }
 
+  /// Returns whether the episode cover is shown on cards (default: true).
+  static Future<bool> getShowEpisodeCover() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(AppValues.prefKeyShowEpisodeCover) ?? true;
+  }
+
+  /// Saves the episode cover visibility setting.
+  static Future<void> setShowEpisodeCover(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(AppValues.prefKeyShowEpisodeCover, enabled);
+  }
+
   /// Returns whether dark mode is enabled (default: false).
   static Future<bool> isDarkMode() async {
     final prefs = await SharedPreferences.getInstance();
@@ -143,5 +154,17 @@ class PreferencesHelper {
   static Future<void> setDarkMode(bool isDark) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(AppValues.prefKeyThemeModeDark, isDark);
+  }
+
+  /// Returns whether skip silence is enabled (default: false).
+  static Future<bool> getSkipSilence() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(AppValues.prefKeySkipSilence) ?? false;
+  }
+
+  /// Saves the skip silence setting.
+  static Future<void> setSkipSilence(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(AppValues.prefKeySkipSilence, enabled);
   }
 }

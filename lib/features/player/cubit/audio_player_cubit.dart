@@ -19,6 +19,8 @@ class AudioPlayerState {
     this.playbackSpeed = 1.0,
     this.groupFoldersView = true,
     this.showCardProgress = true,
+    this.showEpisodeCover = true,
+    this.skipSilence = false,
   });
 
   final Episode? currentEpisode;
@@ -32,6 +34,8 @@ class AudioPlayerState {
   final double playbackSpeed;
   final bool groupFoldersView;
   final bool showCardProgress;
+  final bool showEpisodeCover;
+  final bool skipSilence;
 
   AudioPlayerState copyWith({
     Episode? currentEpisode,
@@ -45,6 +49,8 @@ class AudioPlayerState {
     double? playbackSpeed,
     bool? groupFoldersView,
     bool? showCardProgress,
+    bool? showEpisodeCover,
+    bool? skipSilence,
   }) {
     return AudioPlayerState(
       currentEpisode: currentEpisode ?? this.currentEpisode,
@@ -58,6 +64,8 @@ class AudioPlayerState {
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
       groupFoldersView: groupFoldersView ?? this.groupFoldersView,
       showCardProgress: showCardProgress ?? this.showCardProgress,
+      showEpisodeCover: showEpisodeCover ?? this.showEpisodeCover,
+      skipSilence: skipSilence ?? this.skipSilence,
     );
   }
 }
@@ -160,6 +168,8 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     _loadSavedPlaybackSpeed();
     _loadSavedGroupFoldersView();
     _loadSavedShowCardProgress();
+    _loadSavedShowEpisodeCover();
+    _loadSavedSkipSilence();
   }
 
   Future<void> _loadSavedGroupFoldersView() async {
@@ -180,6 +190,28 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   Future<void> setShowCardProgress(bool enabled) async {
     await PreferencesHelper.setShowCardProgress(enabled);
     emit(state.copyWith(showCardProgress: enabled));
+  }
+
+  Future<void> _loadSavedShowEpisodeCover() async {
+    final enabled = await PreferencesHelper.getShowEpisodeCover();
+    emit(state.copyWith(showEpisodeCover: enabled));
+  }
+
+  Future<void> setShowEpisodeCover(bool enabled) async {
+    await PreferencesHelper.setShowEpisodeCover(enabled);
+    emit(state.copyWith(showEpisodeCover: enabled));
+  }
+
+  Future<void> _loadSavedSkipSilence() async {
+    final enabled = await PreferencesHelper.getSkipSilence();
+    emit(state.copyWith(skipSilence: enabled));
+    await _audioPlayer.setSkipSilenceEnabled(enabled);
+  }
+
+  Future<void> setSkipSilence(bool enabled) async {
+    await PreferencesHelper.setSkipSilence(enabled);
+    await _audioPlayer.setSkipSilenceEnabled(enabled);
+    emit(state.copyWith(skipSilence: enabled));
   }
 
   Future<void> _persistPosition() async {

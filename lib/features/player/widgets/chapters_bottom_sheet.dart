@@ -2,34 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:podmatz/podmatz.dart';
 
 class ChaptersBottomSheet extends StatelessWidget {
-  const ChaptersBottomSheet({
-    super.key,
-    required this.episode,
-    required this.currentPos,
-    required this.isCurrent,
-  });
+  const ChaptersBottomSheet({super.key, required this.episode, required this.currentPos, required this.isCurrent});
 
   final Episode episode;
   final Duration currentPos;
   final bool isCurrent;
 
-  static void show(
-    BuildContext context,
-    Episode episode,
-    Duration currentPos,
-    bool isCurrent,
-  ) {
+  static void show(BuildContext context, Episode episode, Duration currentPos, bool isCurrent) {
     final ColorScheme cs = episode.scheme(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: cs.surface,
+      backgroundColor: cs.surfaceContainerHigh,
       builder: (context) {
-        return ChaptersBottomSheet(
-          episode: episode,
-          currentPos: currentPos,
-          isCurrent: isCurrent,
-        );
+        return ChaptersBottomSheet(episode: episode, currentPos: currentPos, isCurrent: isCurrent);
       },
     );
   }
@@ -54,10 +40,7 @@ class ChaptersBottomSheet extends StatelessWidget {
                 child: Container(
                   width: 40,
                   height: 4,
-                  decoration: BoxDecoration(
-                    color: cs.onSurfaceVariant.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+                  decoration: BoxDecoration(color: cs.onSurfaceVariant.withValues(alpha: 0.4), borderRadius: BorderRadius.circular(2)),
                 ),
               ),
               16.gap,
@@ -67,10 +50,7 @@ class ChaptersBottomSheet extends StatelessWidget {
                   10.gap,
                   Text(
                     'Capítulos (${episode.chapters.length})',
-                    style: tt.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: cs.onSurface,
-                    ),
+                    style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface),
                   ),
                 ],
               ),
@@ -83,8 +63,7 @@ class ChaptersBottomSheet extends StatelessWidget {
                     final Chapter chapter = episode.chapters[index];
                     final bool isActive = (index == episode.chapters.length - 1)
                         ? currentPos >= chapter.startTime
-                        : (currentPos >= chapter.startTime &&
-                            currentPos < episode.chapters[index + 1].startTime);
+                        : (currentPos >= chapter.startTime && currentPos < episode.chapters[index + 1].startTime);
 
                     return ChapterTile(
                       chapter: chapter,
