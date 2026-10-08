@@ -78,22 +78,6 @@ class LocalPodcastService {
             final stat = entity.statSync();
             final dateStr = '${stat.modified.day}/${stat.modified.month}/${stat.modified.year}';
 
-            // Determine bucket
-            final now = DateTime.now();
-            final difference = now.difference(stat.modified).inDays;
-            Bucket bucket;
-            if (difference <= 0) {
-              bucket = Bucket.today;
-            } else if (difference == 1) {
-              bucket = Bucket.yesterday;
-            } else if (difference <= 7) {
-              bucket = Bucket.thisWeek;
-            } else if (difference <= 30) {
-              bucket = Bucket.thisMonth;
-            } else {
-              bucket = Bucket.earlier;
-            }
-
             final String channelName = parentFolder.isEmpty || parentFolder == p.basename(folderPath) ? '' : parentFolder;
 
             // Search for local cover image file or embedded ID3 APIC artwork & duration
@@ -118,7 +102,6 @@ class LocalPodcastService {
 
             episodes.add(
               Episode(
-                bucket: bucket,
                 channel: channelName,
                 host: '',
                 title: episodeTitle,

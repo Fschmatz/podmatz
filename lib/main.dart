@@ -1,10 +1,8 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:podmatz/podmatz.dart';
 
-import 'app.dart';
-import 'common/helpers/locator.dart';
-import 'common/widgets/friendly_error_view.dart';
 import 'features/player/services/podcast_audio_handler.dart';
 
 late AudioHandler audioHandler;
@@ -29,7 +27,10 @@ void main() async {
     return FriendlyErrorView(details: details);
   };
 
-  setupLocator();
+  final isDark = await PreferencesHelper.isDarkMode();
+  final initialThemeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+
+  setupLocator(initialThemeMode: initialThemeMode);
 
   runApp(const App());
 }

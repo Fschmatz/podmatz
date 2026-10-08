@@ -1,13 +1,11 @@
 import 'dart:convert';
 
-import 'bucket.dart';
 import 'chapter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class Episode {
   const Episode({
-    required this.bucket,
     required this.channel,
     required this.host,
     required this.title,
@@ -22,7 +20,6 @@ class Episode {
     this.chapters = const [],
   });
 
-  final Bucket bucket;
   final String channel;
   final String host;
   final String title;
@@ -39,7 +36,6 @@ class Episode {
   double get progress => total.inSeconds == 0 ? 0 : listened.inSeconds / total.inSeconds;
 
   Episode copyWith({
-    Bucket? bucket,
     String? channel,
     String? host,
     String? title,
@@ -54,7 +50,6 @@ class Episode {
     List<Chapter>? chapters,
   }) {
     return Episode(
-      bucket: bucket ?? this.bucket,
       channel: channel ?? this.channel,
       host: host ?? this.host,
       title: title ?? this.title,
@@ -73,7 +68,6 @@ class Episode {
   ColorScheme scheme(BuildContext context) => Theme.of(context).colorScheme;
 
   Map<String, dynamic> toJson() => {
-        'bucket': bucket.index,
         'channel': channel,
         'host': host,
         'title': title,
@@ -88,7 +82,6 @@ class Episode {
       };
 
   factory Episode.fromJson(Map<String, dynamic> json) => Episode(
-        bucket: Bucket.values[json['bucket'] as int? ?? 4],
         channel: json['channel'] as String? ?? '',
         host: json['host'] as String? ?? '',
         title: json['title'] as String? ?? '',

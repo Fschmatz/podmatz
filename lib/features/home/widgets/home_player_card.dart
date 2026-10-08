@@ -118,7 +118,7 @@ class HomePlayerCard extends StatelessWidget {
                     16.gap,
                     Material(
                       color: cs.onPrimary,
-                      shape: MaterialShapeBorder(shape: _heroButtonShapes[_kHeroButtonShape]),
+                      shape: MaterialShapeBorder(shape: ShapeValues.heroButtonShape),
                       clipBehavior: Clip.antiAlias,
                       child: InkWell(
                         onTap: onPlayPause,
@@ -139,17 +139,6 @@ class HomePlayerCard extends StatelessWidget {
     );
   }
 }
-
-final List<RoundedPolygon> _heroButtonShapes = <RoundedPolygon>[
-  MaterialShapes.cookie7Sided,
-  MaterialShapes.clover4Leaf,
-  MaterialShapes.pentagon,
-  MaterialShapes.gem,
-  MaterialShapes.puffy,
-  MaterialShapes.sunny,
-  MaterialShapes.flower,
-];
-const int _kHeroButtonShape = 0;
 
 class _Cover extends StatelessWidget {
   const _Cover({required this.imageUrl, this.imageBytes, required this.scheme});

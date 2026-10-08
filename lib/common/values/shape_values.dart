@@ -4,6 +4,7 @@ import 'package:material_shapes/material_shapes.dart';
 abstract final class ShapeValues {
   static final RoundedPolygon cover = MaterialShapes.clover4Leaf;
   static final RoundedPolygon coverFocused = MaterialShapes.cookie7Sided;
+  static final RoundedPolygon heroButtonShape = MaterialShapes.cookie7Sided;
 
   static ShapeBorder coverBorder(double t) {
     final double tc = t.clamp(0.0, 1.0);

@@ -21,6 +21,7 @@ class AudioPlayerState {
     this.showCardProgress = true,
     this.showEpisodeCover = true,
     this.skipSilence = false,
+    this.useMiniPlayerOnHome = false,
   });
 
   final Episode? currentEpisode;
@@ -36,6 +37,7 @@ class AudioPlayerState {
   final bool showCardProgress;
   final bool showEpisodeCover;
   final bool skipSilence;
+  final bool useMiniPlayerOnHome;
 
   AudioPlayerState copyWith({
     Episode? currentEpisode,
@@ -51,6 +53,7 @@ class AudioPlayerState {
     bool? showCardProgress,
     bool? showEpisodeCover,
     bool? skipSilence,
+    bool? useMiniPlayerOnHome,
   }) {
     return AudioPlayerState(
       currentEpisode: currentEpisode ?? this.currentEpisode,
@@ -66,6 +69,7 @@ class AudioPlayerState {
       showCardProgress: showCardProgress ?? this.showCardProgress,
       showEpisodeCover: showEpisodeCover ?? this.showEpisodeCover,
       skipSilence: skipSilence ?? this.skipSilence,
+      useMiniPlayerOnHome: useMiniPlayerOnHome ?? this.useMiniPlayerOnHome,
     );
   }
 }
@@ -170,6 +174,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     _loadSavedShowCardProgress();
     _loadSavedShowEpisodeCover();
     _loadSavedSkipSilence();
+    _loadSavedUseMiniPlayerOnHome();
   }
 
   Future<void> _loadSavedGroupFoldersView() async {
@@ -212,6 +217,16 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     await PreferencesHelper.setSkipSilence(enabled);
     await _audioPlayer.setSkipSilenceEnabled(enabled);
     emit(state.copyWith(skipSilence: enabled));
+  }
+
+  Future<void> _loadSavedUseMiniPlayerOnHome() async {
+    final enabled = await PreferencesHelper.getUseMiniPlayerOnHome();
+    emit(state.copyWith(useMiniPlayerOnHome: enabled));
+  }
+
+  Future<void> setUseMiniPlayerOnHome(bool enabled) async {
+    await PreferencesHelper.setUseMiniPlayerOnHome(enabled);
+    emit(state.copyWith(useMiniPlayerOnHome: enabled));
   }
 
   Future<void> _persistPosition() async {

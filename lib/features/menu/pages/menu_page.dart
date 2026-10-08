@@ -30,7 +30,7 @@ class _Body extends StatelessWidget {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: [5, 10, 15, 30, 60].map((s) {
+                children: AppValues.seekIntervals.map((s) {
                   return ChoiceChip(
                     label: Text('${s}s'),
                     selected: current == s,
@@ -82,7 +82,7 @@ class _Body extends StatelessWidget {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: [0.75, 1.0, 1.10, 1.2, 1.3, 1.5, 1.75, 2.0, 2.5, 3.0].map((s) {
+                children: AppValues.playbackSpeeds.map((s) {
                   return ChoiceChip(
                     label: Text('${s}x'),
                     selected: current == s,
@@ -191,6 +191,17 @@ class _Body extends StatelessWidget {
                     value: playerState.showEpisodeCover,
                     onChanged: (val) {
                       locator<AudioPlayerCubit>().setShowEpisodeCover(val);
+                    },
+                  ),
+                ),
+                MenuTile(
+                  icon: Icons.aspect_ratio_outlined,
+                  title: 'Mini Player',
+                  subtitle: 'Exibir versão reduzida do player no topo da tela inicial',
+                  trailing: Switch(
+                    value: playerState.useMiniPlayerOnHome,
+                    onChanged: (val) {
+                      locator<AudioPlayerCubit>().setUseMiniPlayerOnHome(val);
                     },
                   ),
                 ),

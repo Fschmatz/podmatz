@@ -3,14 +3,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:podmatz/podmatz.dart';
 
 class ThemeModeCubit extends Cubit<ThemeMode> {
-  ThemeModeCubit() : super(ThemeMode.light) {
+  ThemeModeCubit({ThemeMode initialMode = ThemeMode.system}) : super(initialMode) {
     _loadSavedTheme();
   }
 
   Future<void> _loadSavedTheme() async {
     final isDark = await PreferencesHelper.isDarkMode();
-
-    emit(isDark ? ThemeMode.dark : ThemeMode.light);
+    final loadedMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    if (state != loadedMode) {
+      emit(loadedMode);
+    }
   }
 
   Future<void> toggle() async {

@@ -145,22 +145,36 @@ class _HomePageState extends State<HomePage> {
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       child: GestureDetector(
                         onTap: () => _openPlayer(context, playing),
-                        child: HomePlayerCard(
-                          scheme: playing.scheme(context),
-                          imageUrl: playing.image,
-                          imageBytes: playing.imageBytes,
-                          channel: playing.channel,
-                          title: playing.title,
-                          progress: cardProgress,
-                          position: currentPos,
-                          timeLeft: remaining,
-                          totalTime: totalDur,
-                          coverShape: ShapeValues.coverFocused,
-                          playing: state.isPlaying && state.currentEpisode?.filePath == playing.filePath,
-                          onPlayPause: () {
-                            locator<AudioPlayerCubit>().playEpisode(playing);
-                          },
-                        ),
+                        child: state.useMiniPlayerOnHome
+                            ? HomeMiniPlayerCard(
+                                scheme: playing.scheme(context),
+                                channel: playing.channel,
+                                title: playing.title,
+                                progress: cardProgress,
+                                position: currentPos,
+                                timeLeft: remaining,
+                                totalTime: totalDur,
+                                playing: state.isPlaying && state.currentEpisode?.filePath == playing.filePath,
+                                onPlayPause: () {
+                                  locator<AudioPlayerCubit>().playEpisode(playing);
+                                },
+                              )
+                            : HomePlayerCard(
+                                scheme: playing.scheme(context),
+                                imageUrl: playing.image,
+                                imageBytes: playing.imageBytes,
+                                channel: playing.channel,
+                                title: playing.title,
+                                progress: cardProgress,
+                                position: currentPos,
+                                timeLeft: remaining,
+                                totalTime: totalDur,
+                                coverShape: ShapeValues.coverFocused,
+                                playing: state.isPlaying && state.currentEpisode?.filePath == playing.filePath,
+                                onPlayPause: () {
+                                  locator<AudioPlayerCubit>().playEpisode(playing);
+                                },
+                              ),
                       ),
                     );
                   },
@@ -201,87 +215,15 @@ class _HomePageState extends State<HomePage> {
 
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 12),
-                            child: Container(
-                              decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(20)),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  InkWell(
-                                    onTap: () => _toggleGroup(groupName),
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            width: 40,
-                                            height: 40,
-                                            decoration: BoxDecoration(color: cs.primaryContainer, borderRadius: BorderRadius.circular(12)),
-                                            child: Icon(
-                                              isExpanded ? Icons.folder_open_rounded : Icons.folder_rounded,
-                                              color: cs.onPrimaryContainer,
-                                              size: 22,
-                                            ),
-                                          ),
-                                          12.gap,
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  groupName,
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface),
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                                Text(
-                                                  '${groupList.length} ${groupList.length == 1 ? 'episódio' : 'episódios'}',
-                                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          AnimatedRotation(
-                                            turns: isExpanded ? 0.5 : 0.0,
-                                            duration: const Duration(milliseconds: 300),
-                                            curve: Curves.easeInOut,
-                                            child: Icon(Icons.keyboard_arrow_down_rounded, color: cs.onSurfaceVariant),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  ClipRect(
-                                    child: AnimatedAlign(
-                                      duration: const Duration(milliseconds: 300),
-                                      curve: Curves.easeInOut,
-                                      alignment: Alignment.topCenter,
-                                      heightFactor: isExpanded ? 1.0 : 0.0,
-                                      child: Padding(
-                                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                                        child: Column(
-                                          children: groupList.map((ep) {
-                                            final bool isCurrent = state.currentEpisode?.filePath == ep.filePath;
-                                            return Padding(
-                                              padding: const EdgeInsets.only(bottom: 12),
-                                              child: EpisodeCard(
-                                                episode: ep,
-                                                playing: isCurrent && state.isPlaying,
-                                                showProgress: state.showCardProgress,
-                                                onTap: () {
-                                                  _openPlayer(context, ep);
-                                                },
-                                              ),
-                                            );
-                                          }).toList(),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            child: FolderGroupTile(
+                              groupName: groupName,
+                              episodes: groupList,
+                              isExpanded: isExpanded,
+                              currentEpisodeFilePath: state.currentEpisode?.filePath,
+                              isPlaying: state.isPlaying,
+                              showCardProgress: state.showCardProgress,
+                              onToggle: () => _toggleGroup(groupName),
+                              onEpisodeTap: (ep) => _openPlayer(context, ep),
                             ),
                           );
                         },

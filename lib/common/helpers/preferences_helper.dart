@@ -167,4 +167,16 @@ class PreferencesHelper {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(AppValues.prefKeySkipSilence, enabled);
   }
+
+  /// Returns whether mini player on home page is enabled (default: false).
+  static Future<bool> getUseMiniPlayerOnHome() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(AppValues.prefKeyUseMiniPlayerOnHome) ?? false;
+  }
+
+  /// Saves mini player on home page setting.
+  static Future<void> setUseMiniPlayerOnHome(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(AppValues.prefKeyUseMiniPlayerOnHome, enabled);
+  }
 }
