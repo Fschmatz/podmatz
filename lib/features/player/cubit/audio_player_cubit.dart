@@ -520,6 +520,26 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     }
   }
 
+  Future<void> updateEpisodePosition(Episode episode, Duration position) async {
+    if (episode.filePath == null) return;
+
+    if (state.currentEpisode?.filePath == episode.filePath) {
+      await seek(position);
+      return;
+    }
+
+    final updatedEpisodes = state.episodes.map((ep) {
+      if (ep.filePath == episode.filePath) {
+        return ep.copyWith(listened: position);
+      }
+      return ep;
+    }).toList();
+
+    await PreferencesHelper.setEpisodePositionSeconds(episode.filePath!, position.inSeconds);
+
+    emit(state.copyWith(episodes: updatedEpisodes));
+  }
+
   Future<void> togglePlayPause() async {
     if (!_isSourceLoaded && state.currentEpisode != null) {
       // Cold restore — need to actually load the file first
@@ -565,6 +585,66 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   Future<void> seekBackward() async {
     final newPos = state.position - Duration(seconds: state.seekIntervalSeconds);
     await seek(newPos < Duration.zero ? Duration.zero : newPos);
+  }
+
+  Future<void> saveChapter({
+    required Episode episode,
+    required Chapter chapter,
+    Chapter? oldChapter,
+  }) async {
+    final updatedChapters = await _podcastService.saveChapter(
+      episode: episode,
+      chapter: chapter,
+      oldChapter: oldChapter,
+    );
+
+    final updatedEpisodes = state.episodes.map((ep) {
+      if (ep.filePath == episode.filePath) {
+        return ep.copyWith(chapters: updatedChapters);
+      }
+      return ep;
+    }).toList();
+
+    Episode? updatedCurrent = state.currentEpisode;
+    if (updatedCurrent != null && updatedCurrent.filePath == episode.filePath) {
+      updatedCurrent = updatedCurrent.copyWith(chapters: updatedChapters);
+    }
+
+    await PreferencesHelper.setCachedEpisodes(updatedEpisodes);
+
+    emit(state.copyWith(
+      episodes: updatedEpisodes,
+      currentEpisode: updatedCurrent,
+    ));
+  }
+
+  Future<void> deleteChapter({
+    required Episode episode,
+    required Chapter chapter,
+  }) async {
+    final updatedChapters = await _podcastService.deleteChapter(
+      episode: episode,
+      chapter: chapter,
+    );
+
+    final updatedEpisodes = state.episodes.map((ep) {
+      if (ep.filePath == episode.filePath) {
+        return ep.copyWith(chapters: updatedChapters);
+      }
+      return ep;
+    }).toList();
+
+    Episode? updatedCurrent = state.currentEpisode;
+    if (updatedCurrent != null && updatedCurrent.filePath == episode.filePath) {
+      updatedCurrent = updatedCurrent.copyWith(chapters: updatedChapters);
+    }
+
+    await PreferencesHelper.setCachedEpisodes(updatedEpisodes);
+
+    emit(state.copyWith(
+      episodes: updatedEpisodes,
+      currentEpisode: updatedCurrent,
+    ));
   }
 
   @override

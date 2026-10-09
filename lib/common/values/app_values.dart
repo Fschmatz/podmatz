@@ -1,7 +1,7 @@
 abstract final class AppValues {
   static String get title => 'Podmatz';
 
-  static String get version => '1.2.3';
+  static String get version => '1.2.4';
 
   static String get nomePastaRaiz => 'Vários';
 

@@ -647,7 +647,7 @@ class LocalPodcastService {
             if (startRaw is num) {
               start = Duration(milliseconds: (startRaw * 1000).toInt());
             } else if (startRaw is String) {
-              start = _parseTimeString(startRaw);
+              start = parseTimeString(startRaw);
             }
 
             chapters.add(Chapter(title: title, startTime: start));
@@ -661,8 +661,8 @@ class LocalPodcastService {
     return chapters;
   }
 
-  static Duration _parseTimeString(String s) {
-    final parts = s.split(':');
+  static Duration parseTimeString(String s) {
+    final parts = s.trim().split(':');
     if (parts.length == 3) {
       final h = int.tryParse(parts[0]) ?? 0;
       final m = int.tryParse(parts[1]) ?? 0;
@@ -680,6 +680,110 @@ class LocalPodcastService {
       final val = double.tryParse(s) ?? 0;
       return Duration(milliseconds: (val * 1000).toInt());
     }
+  }
+
+  static String formatDurationTimestamp(Duration d) {
+    final hours = d.inHours.toString().padLeft(2, '0');
+    final minutes = (d.inMinutes % 60).toString().padLeft(2, '0');
+    final seconds = (d.inSeconds % 60).toString().padLeft(2, '0');
+    final ms = (d.inMilliseconds % 1000).toString().padLeft(3, '0');
+    return '$hours:$minutes:$seconds.$ms';
+  }
+
+  Future<List<Chapter>> saveChapter({
+    required Episode episode,
+    required Chapter chapter,
+    Chapter? oldChapter,
+  }) async {
+    if (episode.filePath == null) return episode.chapters;
+
+    final audioFile = File(episode.filePath!);
+    if (!audioFile.existsSync()) return episode.chapters;
+
+    final parentDir = audioFile.parent;
+    final audioBaseName = p.basenameWithoutExtension(audioFile.path);
+
+    final primaryFile = File(p.join(parentDir.path, '$audioBaseName.chapters.json'));
+    final fallbackFile = File(p.join(parentDir.path, '$audioBaseName.json'));
+
+    File targetFile = primaryFile;
+    if (fallbackFile.existsSync() && !primaryFile.existsSync()) {
+      targetFile = fallbackFile;
+    }
+
+    final updatedChapters = List<Chapter>.from(episode.chapters);
+
+    if (oldChapter != null) {
+      final idx = updatedChapters.indexWhere((c) => c.startTime == oldChapter.startTime && c.title == oldChapter.title);
+      if (idx != -1) {
+        updatedChapters[idx] = chapter;
+      } else {
+        updatedChapters.add(chapter);
+      }
+    } else {
+      final existingIndex = updatedChapters.indexWhere((c) => c.startTime == chapter.startTime);
+      if (existingIndex != -1) {
+        updatedChapters[existingIndex] = chapter;
+      } else {
+        updatedChapters.add(chapter);
+      }
+    }
+
+    updatedChapters.sort((a, b) => a.startTime.compareTo(b.startTime));
+
+    final jsonList = updatedChapters.map((c) {
+      return {
+        'start': formatDurationTimestamp(c.startTime),
+        'title': c.title,
+      };
+    }).toList();
+
+    const encoder = JsonEncoder.withIndent('  ');
+    final jsonString = encoder.convert(jsonList);
+
+    await targetFile.writeAsString(jsonString);
+
+    return updatedChapters;
+  }
+
+  Future<List<Chapter>> deleteChapter({
+    required Episode episode,
+    required Chapter chapter,
+  }) async {
+    if (episode.filePath == null) return episode.chapters;
+
+    final audioFile = File(episode.filePath!);
+    if (!audioFile.existsSync()) return episode.chapters;
+
+    final parentDir = audioFile.parent;
+    final audioBaseName = p.basenameWithoutExtension(audioFile.path);
+
+    final primaryFile = File(p.join(parentDir.path, '$audioBaseName.chapters.json'));
+    final fallbackFile = File(p.join(parentDir.path, '$audioBaseName.json'));
+
+    File? targetFile;
+    if (primaryFile.existsSync()) {
+      targetFile = primaryFile;
+    } else if (fallbackFile.existsSync()) {
+      targetFile = fallbackFile;
+    }
+
+    final updatedChapters = List<Chapter>.from(episode.chapters);
+    updatedChapters.removeWhere((c) => c.startTime == chapter.startTime && c.title == chapter.title);
+
+    if (targetFile != null) {
+      final jsonList = updatedChapters.map((c) {
+        return {
+          'start': formatDurationTimestamp(c.startTime),
+          'title': c.title,
+        };
+      }).toList();
+
+      const encoder = JsonEncoder.withIndent('  ');
+      await targetFile.writeAsString(encoder.convert(jsonList));
+    }
+
+    return updatedChapters;
   }
 }
 

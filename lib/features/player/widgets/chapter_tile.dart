@@ -2,13 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:podmatz/podmatz.dart';
 
 class ChapterTile extends StatelessWidget {
-  const ChapterTile({super.key, required this.chapter, required this.index, required this.isActive, required this.scheme, required this.onTap});
+  const ChapterTile({
+    super.key,
+    required this.chapter,
+    required this.index,
+    required this.isActive,
+    required this.scheme,
+    required this.onTap,
+    this.onEdit,
+    this.onDelete,
+  });
 
   final Chapter chapter;
   final int index;
   final bool isActive;
   final ColorScheme scheme;
   final VoidCallback onTap;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +54,33 @@ class ChapterTile extends StatelessWidget {
           chapter.startTime.minutesLabel,
           style: tt.bodySmall?.copyWith(color: isActive ? cs.onPrimaryContainer.withValues(alpha: 0.8) : cs.onSurfaceVariant),
         ),
-        trailing: isActive ? Icon(Icons.play_circle_filled_rounded, color: cs.primary) : Icon(Icons.play_arrow_rounded, color: cs.onSurfaceVariant),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isActive) Icon(Icons.play_circle_filled_rounded, color: cs.primary) else Icon(Icons.play_arrow_rounded, color: cs.onSurfaceVariant),
+            if (onEdit != null || onDelete != null)
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert_rounded, size: 20, color: isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant),
+                onSelected: (value) {
+                  if (value == 'edit' && onEdit != null) {
+                    onEdit!();
+                  } else if (value == 'delete' && onDelete != null) {
+                    onDelete!();
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(children: [Icon(Icons.edit_outlined, size: 20), SizedBox(width: 8), Text('Editar')]),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(children: [Icon(Icons.delete_outline_rounded, size: 20), SizedBox(width: 8), Text('Excluir')]),
+                  ),
+                ],
+              ),
+          ],
+        ),
         onTap: onTap,
       ),
     );

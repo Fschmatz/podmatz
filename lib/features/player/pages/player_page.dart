@@ -63,17 +63,19 @@ class _PlayerPageState extends State<PlayerPage> {
         }
 
         return Scaffold(
+          resizeToAvoidBottomInset: false,
           backgroundColor: cs.surface,
           appBar: AppBar(
             backgroundColor: cs.surface,
             leading: const StyledBackButton(),
             actions: [
-              /* if (pageEpisode.chapters.isNotEmpty)
-                IconButton(
-                  icon: const Icon(Icons.bookmarks_rounded),
-                  tooltip: 'Capítulos',
-                  onPressed: () => ChaptersBottomSheet.show(context, pageEpisode, displayPos, isCurrent),
-                ),*/
+              IconButton(
+                icon: const Icon(Icons.bookmark_add_outlined),
+                tooltip: 'Adicionar Capítulo',
+                onPressed: () {
+                  AddChapterDialog.show(context, episode: pageEpisode, initialTime: displayPos);
+                },
+              ),
             ],
           ),
           body: Padding(
@@ -125,7 +127,7 @@ class _PlayerPageState extends State<PlayerPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 250),
+                        duration: const Duration(milliseconds: 200),
                         transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
                         child: Text(
                           timeLabel,
@@ -152,15 +154,15 @@ class _PlayerPageState extends State<PlayerPage> {
                   max: maxSeconds,
                   scheme: cs,
                   onChanged: (val) {
-                    if (isCurrent) {
-                      setState(() {
-                        _dragValue = val;
-                      });
-                    }
+                    setState(() {
+                      _dragValue = val;
+                    });
                   },
-                  onChangeEnd: (val) {
-                    if (isCurrent) {
-                      locator<AudioPlayerCubit>().seek(Duration(seconds: val.toInt()));
+                  onChangeEnd: (val) async {
+                    final targetPos = Duration(seconds: val.toInt());
+                    await locator<AudioPlayerCubit>().updateEpisodePosition(pageEpisode, targetPos);
+                    await Future<void>.delayed(const Duration(milliseconds: 200));
+                    if (mounted) {
                       setState(() {
                         _dragValue = null;
                       });
@@ -180,10 +182,20 @@ class _PlayerPageState extends State<PlayerPage> {
                     }
                   },
                   onSeekBackward: () {
-                    if (isCurrent) locator<AudioPlayerCubit>().seekBackward();
+                    if (isCurrent) {
+                      locator<AudioPlayerCubit>().seekBackward();
+                    } else {
+                      final newSec = (currentSeconds - playerState.seekIntervalSeconds).clamp(0.0, maxSeconds);
+                      locator<AudioPlayerCubit>().updateEpisodePosition(pageEpisode, Duration(seconds: newSec.toInt()));
+                    }
                   },
                   onSeekForward: () {
-                    if (isCurrent) locator<AudioPlayerCubit>().seekForward();
+                    if (isCurrent) {
+                      locator<AudioPlayerCubit>().seekForward();
+                    } else {
+                      final newSec = (currentSeconds + playerState.seekIntervalSeconds).clamp(0.0, maxSeconds);
+                      locator<AudioPlayerCubit>().updateEpisodePosition(pageEpisode, Duration(seconds: newSec.toInt()));
+                    }
                   },
                 ),
                 const BottomPadding(),

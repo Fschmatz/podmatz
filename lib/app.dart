@@ -19,7 +19,18 @@ class _AppState extends State<App> {
   ColorScheme? _cachedDark;
 
   ThemeData _buildTheme(ColorScheme colorScheme) {
-    return ThemeData(colorScheme: colorScheme, useMaterial3: true);
+    return ThemeData(
+      colorScheme: colorScheme,
+      useMaterial3: true,
+      popupMenuTheme: PopupMenuThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 3,
+        color: colorScheme.surfaceContainerHighest,
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      ),
+    );
   }
 
   @override

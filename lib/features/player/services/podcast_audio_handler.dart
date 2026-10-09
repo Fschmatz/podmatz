@@ -19,13 +19,15 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
         playbackState.value.copyWith(
           controls: [MediaControl.rewind, if (playing) MediaControl.pause else MediaControl.play, MediaControl.fastForward],
           systemActions: const {
+            MediaAction.play,
+            MediaAction.pause,
+            MediaAction.playPause,
+            MediaAction.stop,
             MediaAction.seek,
             MediaAction.seekForward,
             MediaAction.seekBackward,
             MediaAction.fastForward,
             MediaAction.rewind,
-            //MediaAction.skipToNext,
-            //MediaAction.skipToPrevious,
           },
           androidCompactActionIndices: const [0, 1, 2],
           processingState:
