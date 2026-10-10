@@ -48,6 +48,7 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
     });
 
     player.positionStream.listen((position) {
+      if (!player.playing) return;
       playbackState.add(playbackState.value.copyWith(updatePosition: position));
     });
 

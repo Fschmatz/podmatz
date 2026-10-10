@@ -1,7 +1,6 @@
 export 'models/models.dart';
 export 'pages/home_page.dart';
 export 'widgets/episode_card.dart';
-export 'widgets/filter_tabs.dart';
 export 'widgets/folder_group_tile.dart';
 export 'widgets/home_app_bar.dart';
 export 'widgets/home_mini_player_card.dart';

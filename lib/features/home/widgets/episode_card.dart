@@ -3,12 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:motor/motor.dart';
 
 class EpisodeCard extends StatefulWidget {
-  const EpisodeCard({super.key, required this.episode, required this.playing, required this.onTap, this.showProgress});
+  const EpisodeCard({
+    super.key,
+    required this.episode,
+    required this.playing,
+    required this.onTap,
+    this.showProgress,
+    required this.isGroupFoldersView,
+  });
 
   final Episode episode;
   final bool playing;
   final VoidCallback onTap;
   final bool? showProgress;
+  final bool isGroupFoldersView;
 
   @override
   State<EpisodeCard> createState() => _EpisodeCardState();
@@ -23,7 +31,7 @@ class _EpisodeCardState extends State<EpisodeCard> {
     final bool showProgress = widget.showProgress ?? locator<AudioPlayerCubit>().state.showCardProgress;
     final bool showCover = locator<AudioPlayerCubit>().state.showEpisodeCover;
     final double progress = showProgress ? episode.progress : 0.0;
-    final Color fill = cs.secondaryContainer;
+    final Color fill = cs.secondaryContainer.withValues(alpha: 0.75);
     final Color onFill = cs.onSurface;
 
     return SingleMotionBuilder(
@@ -33,7 +41,10 @@ class _EpisodeCardState extends State<EpisodeCard> {
         final double radius = 24 + (40 - 24) * t;
         return Container(
           clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(radius < 0 ? 0 : radius)),
+          decoration: BoxDecoration(
+            color: widget.isGroupFoldersView ? cs.surfaceContainer : cs.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(radius < 0 ? 0 : radius),
+          ),
           child: child,
         );
       },
@@ -65,7 +76,9 @@ class _EpisodeCardState extends State<EpisodeCard> {
 
   Widget _content(BuildContext context, ColorScheme cs, Color fg, bool showCover) {
     final Episode episode = widget.episode;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final TextTheme tt = Theme
+        .of(context)
+        .textTheme;
     final double cardPadding = showCover ? 12 : 16;
 
     return Padding(
@@ -76,10 +89,11 @@ class _EpisodeCardState extends State<EpisodeCard> {
             SingleMotionBuilder(
               motion: const MaterialSpringMotion.standardSpatialFast(),
               value: widget.playing ? 1.0 : 0.0,
-              builder: (context, t, child) => ClipPath(
-                clipper: ShapeBorderClipper(shape: ShapeValues.coverBorder(t)),
-                child: child,
-              ),
+              builder: (context, t, child) =>
+                  ClipPath(
+                    clipper: ShapeBorderClipper(shape: ShapeValues.coverBorder(t)),
+                    child: child,
+                  ),
               child: SizedBox(
                 width: 62,
                 height: 62,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:podmatz/podmatz.dart';
 
 class AddChapterDialog extends StatefulWidget {
@@ -69,14 +70,27 @@ class _AddChapterDialogState extends State<AddChapterDialog> {
           children: [
             TextFormField(
               controller: _timeController,
+              keyboardType: TextInputType.datetime,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[\d:\.]')),
+              ],
               decoration: const InputDecoration(
-                labelText: 'Tempo',
+                labelText: 'Tempo (ex: 01:15:30 ou 15:30)',
                 border: OutlineInputBorder(),
-                //prefixIcon: Icon(Icons.timer_outlined),
+                hintText: '00:00:00.000',
               ),
               validator: (val) {
                 if (val == null || val.trim().isEmpty) {
                   return 'Informe o tempo do capítulo';
+                }
+                final trimmed = val.trim();
+                final timeRegex = RegExp(r'^(?:(?:\d+:)?(?:[0-5]?\d):(?:[0-5]\d)(?:\.\d{1,3})?|\d+(?:\.\d{1,3})?)$');
+                if (!timeRegex.hasMatch(trimmed)) {
+                  return 'Formato inválido (ex: 01:15:30 ou 15:30)';
+                }
+                final duration = LocalPodcastService.parseTimeString(trimmed);
+                if (widget.episode.total > Duration.zero && duration > widget.episode.total) {
+                  return 'O tempo excede a duração total (${widget.episode.total.minutesLabel})';
                 }
                 return null;
               },

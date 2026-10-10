@@ -196,6 +196,7 @@ class _HomePageState extends State<HomePage> {
                               episode: ep,
                               playing: isCurrent && state.isPlaying,
                               showProgress: state.showCardProgress,
+                              isGroupFoldersView: false,
                               onTap: () {
                                 _openPlayer(context, ep);
                               },

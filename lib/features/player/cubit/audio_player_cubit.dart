@@ -107,6 +107,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     });
 
     _audioPlayer.positionStream.listen((pos) {
+      if (!_audioPlayer.playing) return;
       final currentPath = state.currentEpisode?.filePath;
       List<Episode> updatedEpisodes = state.episodes;
       Episode? updatedCurrent = state.currentEpisode;
