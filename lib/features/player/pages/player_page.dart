@@ -97,13 +97,16 @@ class _PlayerPageState extends State<PlayerPage> {
                 8.gap,
                 Text(
                   pageEpisode.title,
+                  maxLines: 4,
                   style: tt.displaySmall?.copyWith(color: cs.primary, fontWeight: FontWeight.w800),
                 ),
                 8.gap,
                 Row(
                   children: [
-                    /*   Icon(Icons.schedule_rounded, size: 16, color: cs.onSurfaceVariant),
-                    6.gap,*/
+                    /*
+                    Icon(Icons.schedule_rounded, size: 16, color: cs.onSurfaceVariant),
+                    6.gap,
+                    */
                     Text(
                       displayPos.inSeconds > 0 ? '${displayPos.minutesLabel} / ${totalDuration.minutesLabel}' : totalDuration.minutesLabel,
                       style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant, fontWeight: FontWeight.w600),

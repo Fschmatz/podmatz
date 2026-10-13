@@ -112,21 +112,6 @@ class _HomePageState extends State<HomePage> {
           );
         }
 
-        // Group episodes by folder/channel
-        final Map<String, List<Episode>> groupedEpisodes = {};
-        for (final ep in episodes) {
-          final groupName = ep.channel.isNotEmpty ? ep.channel : AppValues.nomePastaRaiz;
-          groupedEpisodes.putIfAbsent(groupName, () => []).add(ep);
-        }
-
-        // Sort groups: named folders first, nomePastaRaiz last
-        final sortedGroupKeys = groupedEpisodes.keys.toList()
-          ..sort((a, b) {
-            if (a == AppValues.nomePastaRaiz) return 1;
-            if (b == AppValues.nomePastaRaiz) return -1;
-            return a.compareTo(b);
-          });
-
         return Scaffold(
           backgroundColor: cs.surface,
           appBar: const HomeAppBar(),
@@ -181,54 +166,81 @@ class _HomePageState extends State<HomePage> {
                 ),
 
               Expanded(
-                child: !state.groupFoldersView
-                    ? ListView.builder(
+                child: BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
+                  bloc: locator<AudioPlayerCubit>(),
+                  // Only rebuild the list when something list-relevant changes.
+                  // Position ticks are intentionally excluded to avoid per-second rebuilds.
+                  buildWhen: (prev, curr) =>
+                    prev.episodes != curr.episodes ||
+                    prev.groupFoldersView != curr.groupFoldersView ||
+                    prev.showCardProgress != curr.showCardProgress ||
+                    prev.isPlaying != curr.isPlaying ||
+                    prev.currentEpisode?.filePath != curr.currentEpisode?.filePath,
+                  builder: (context, listState) {
+                    final List<Episode> listEpisodes = [...listState.episodes]
+                      ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+
+                    if (!listState.groupFoldersView) {
+                      return ListView.builder(
                         scrollCacheExtent: ScrollCacheExtent.pixels(600.0),
                         padding: EdgeInsets.fromLTRB(16, 0, 16, BottomPadding.of(context) + 16),
-                        itemCount: episodes.length,
+                        itemCount: listEpisodes.length,
                         itemBuilder: (context, index) {
-                          final Episode ep = episodes[index];
-                          final bool isCurrent = state.currentEpisode?.filePath == ep.filePath;
-
+                          final Episode ep = listEpisodes[index];
+                          final bool isCurrent = listState.currentEpisode?.filePath == ep.filePath;
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: EpisodeCard(
                               episode: ep,
-                              playing: isCurrent && state.isPlaying,
-                              showProgress: state.showCardProgress,
+                              playing: isCurrent && listState.isPlaying,
+                              showProgress: listState.showCardProgress,
                               isGroupFoldersView: false,
-                              onTap: () {
-                                _openPlayer(context, ep);
-                              },
+                              onTap: () => _openPlayer(context, ep),
                             ),
                           );
                         },
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        scrollCacheExtent: ScrollCacheExtent.pixels(600.0),
-                        padding: EdgeInsets.fromLTRB(16, 0, 16, BottomPadding.of(context) + 16),
-                        itemCount: sortedGroupKeys.length,
-                        itemBuilder: (context, groupIndex) {
-                          final groupName = sortedGroupKeys[groupIndex];
-                          final groupList = [...groupedEpisodes[groupName]!]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
-                          final bool isExpanded = _openGroupName == groupName;
+                      );
+                    }
 
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: FolderGroupTile(
-                              groupName: groupName,
-                              episodes: groupList,
-                              isExpanded: isExpanded,
-                              currentEpisodeFilePath: state.currentEpisode?.filePath,
-                              isPlaying: state.isPlaying,
-                              showCardProgress: state.showCardProgress,
-                              onToggle: () => _toggleGroup(groupName),
-                              onEpisodeTap: (ep) => _openPlayer(context, ep),
-                            ),
-                          );
-                        },
-                      ),
+                    final Map<String, List<Episode>> groupedEpisodes = {};
+                    for (final ep in listEpisodes) {
+                      final groupName = ep.channel.isNotEmpty ? ep.channel : AppValues.rootFolderName;
+                      groupedEpisodes.putIfAbsent(groupName, () => []).add(ep);
+                    }
+                    final sortedGroupKeys = groupedEpisodes.keys.toList()
+                      ..sort((a, b) {
+                        if (a == AppValues.rootFolderName) return 1;
+                        if (b == AppValues.rootFolderName) return -1;
+                        return a.compareTo(b);
+                      });
+
+                    return ListView.builder(
+                      controller: _scrollController,
+                      scrollCacheExtent: ScrollCacheExtent.pixels(600.0),
+                      padding: EdgeInsets.fromLTRB(16, 0, 16, BottomPadding.of(context) + 16),
+                      itemCount: sortedGroupKeys.length,
+                      itemBuilder: (context, groupIndex) {
+                        final groupName = sortedGroupKeys[groupIndex];
+                        final groupList = [...groupedEpisodes[groupName]!]
+                          ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+                        final bool isExpanded = _openGroupName == groupName;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: FolderGroupTile(
+                            groupName: groupName,
+                            episodes: groupList,
+                            isExpanded: isExpanded,
+                            currentEpisodeFilePath: listState.currentEpisode?.filePath,
+                            isPlaying: listState.isPlaying,
+                            showCardProgress: listState.showCardProgress,
+                            onToggle: () => _toggleGroup(groupName),
+                            onEpisodeTap: (ep) => _openPlayer(context, ep),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ],
           ),

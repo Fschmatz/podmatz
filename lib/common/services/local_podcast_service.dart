@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:podmatz/podmatz.dart';
 import 'package:file_picker/file_picker.dart';
@@ -92,7 +93,7 @@ class LocalPodcastService {
 
             final meta = await _extractAudioMetadata(entity);
             if (meta.coverBytes != null) {
-              coverBytes = meta.coverBytes;
+              coverBytes = await _resizeImageBytes(meta.coverBytes!, 160);
             }
             episodeDuration = meta.duration;
             final String episodeTitle = (meta.title != null && meta.title!.isNotEmpty) ? meta.title! : fileName;
@@ -170,14 +171,14 @@ class LocalPodcastService {
         duration ??= id3Meta.duration;
       } else if (header.length >= 8 &&
           ((header[4] == 0x66 && header[5] == 0x74 && header[6] == 0x79 && header[7] == 0x70) || // 'ftyp'
-              (header[4] == 0x6D && header[5] == 0x6F && header[6] == 0x6F && header[7] == 0x76))) { // 'moov'
+              (header[4] == 0x6D && header[5] == 0x6F && header[6] == 0x6F && header[7] == 0x76))) {
+        // 'moov'
         // MP4 / M4A container
         final mp4Meta = _parseMp4(raf, fileLength);
         coverBytes = mp4Meta.coverBytes;
         title = mp4Meta.title;
         duration ??= mp4Meta.duration;
-      } else if (header.length >= 4 &&
-          header[0] == 0x66 && header[1] == 0x4C && header[2] == 0x61 && header[3] == 0x43) {
+      } else if (header.length >= 4 && header[0] == 0x66 && header[1] == 0x4C && header[2] == 0x61 && header[3] == 0x43) {
         // FLAC
         final flacMeta = _parseFlac(raf, fileLength);
         coverBytes = flacMeta.coverBytes;
@@ -215,10 +216,7 @@ class LocalPodcastService {
       raf.setPositionSync(10);
       final version = header[3]; // 2 = v2.2, 3 = v2.3, 4 = v2.4
       final flags = header[5];
-      final tagSize = ((header[6] & 0x7F) << 21) |
-          ((header[7] & 0x7F) << 14) |
-          ((header[8] & 0x7F) << 7) |
-          (header[9] & 0x7F);
+      final tagSize = ((header[6] & 0x7F) << 21) | ((header[7] & 0x7F) << 14) | ((header[8] & 0x7F) << 7) | (header[9] & 0x7F);
 
       Uint8List tagBytes = raf.readSync(tagSize);
 
@@ -233,10 +231,7 @@ class LocalPodcastService {
       if ((flags & 0x40) != 0 && tagBytes.length >= 4) {
         int extSize = (tagBytes[0] << 24) | (tagBytes[1] << 16) | (tagBytes[2] << 8) | tagBytes[3];
         if (version == 4) {
-          extSize = ((tagBytes[0] & 0x7F) << 21) |
-              ((tagBytes[1] & 0x7F) << 14) |
-              ((tagBytes[2] & 0x7F) << 7) |
-              (tagBytes[3] & 0x7F);
+          extSize = ((tagBytes[0] & 0x7F) << 21) | ((tagBytes[1] & 0x7F) << 14) | ((tagBytes[2] & 0x7F) << 7) | (tagBytes[3] & 0x7F);
         }
         offset += extSize > 0 && extSize < tagBytes.length ? extSize : 4;
       }
@@ -256,13 +251,11 @@ class LocalPodcastService {
           frameId = String.fromCharCodes(tagBytes.sublist(offset, offset + 4));
           if (frameId.codeUnits.any((c) => c < 32 || c > 126)) break;
 
-          frameSize = (tagBytes[offset + 4] << 24) |
-              (tagBytes[offset + 5] << 16) |
-              (tagBytes[offset + 6] << 8) |
-              tagBytes[offset + 7];
+          frameSize = (tagBytes[offset + 4] << 24) | (tagBytes[offset + 5] << 16) | (tagBytes[offset + 6] << 8) | tagBytes[offset + 7];
 
           if (version == 4) {
-            final syncsafe = ((tagBytes[offset + 4] & 0x7F) << 21) |
+            final syncsafe =
+                ((tagBytes[offset + 4] & 0x7F) << 21) |
                 ((tagBytes[offset + 5] & 0x7F) << 14) |
                 ((tagBytes[offset + 6] & 0x7F) << 7) |
                 (tagBytes[offset + 7] & 0x7F);
@@ -378,14 +371,9 @@ class LocalPodcastService {
 
   static Uint8List? _extractMp4Cover(Uint8List moovBytes) {
     for (int i = 0; i < moovBytes.length - 8; i++) {
-      if (moovBytes[i] == 0x63 &&
-          moovBytes[i + 1] == 0x6F &&
-          moovBytes[i + 2] == 0x76 &&
-          moovBytes[i + 3] == 0x72) { // 'covr'
-        int boxSize = (moovBytes[i - 4] << 24) |
-            (moovBytes[i - 3] << 16) |
-            (moovBytes[i - 2] << 8) |
-            moovBytes[i - 1];
+      if (moovBytes[i] == 0x63 && moovBytes[i + 1] == 0x6F && moovBytes[i + 2] == 0x76 && moovBytes[i + 3] == 0x72) {
+        // 'covr'
+        int boxSize = (moovBytes[i - 4] << 24) | (moovBytes[i - 3] << 16) | (moovBytes[i - 2] << 8) | moovBytes[i - 1];
         if (boxSize <= 8 || i - 4 + boxSize > moovBytes.length) {
           boxSize = moovBytes.length - (i - 4);
         }
@@ -401,28 +389,17 @@ class LocalPodcastService {
 
   static Duration? _extractMp4Duration(Uint8List moovBytes) {
     for (int i = 0; i < moovBytes.length - 28; i++) {
-      if (moovBytes[i] == 0x6D &&
-          moovBytes[i + 1] == 0x76 &&
-          moovBytes[i + 2] == 0x68 &&
-          moovBytes[i + 3] == 0x64) { // 'mvhd'
+      if (moovBytes[i] == 0x6D && moovBytes[i + 1] == 0x76 && moovBytes[i + 2] == 0x68 && moovBytes[i + 3] == 0x64) {
+        // 'mvhd'
         final version = moovBytes[i + 4];
         if (version == 0) {
-          final timescale = (moovBytes[i + 16] << 24) |
-              (moovBytes[i + 17] << 16) |
-              (moovBytes[i + 18] << 8) |
-              moovBytes[i + 19];
-          final dur = (moovBytes[i + 20] << 24) |
-              (moovBytes[i + 21] << 16) |
-              (moovBytes[i + 22] << 8) |
-              moovBytes[i + 23];
+          final timescale = (moovBytes[i + 16] << 24) | (moovBytes[i + 17] << 16) | (moovBytes[i + 18] << 8) | moovBytes[i + 19];
+          final dur = (moovBytes[i + 20] << 24) | (moovBytes[i + 21] << 16) | (moovBytes[i + 22] << 8) | moovBytes[i + 23];
           if (timescale > 0 && dur > 0) {
             return Duration(milliseconds: ((dur / timescale) * 1000).round());
           }
         } else if (version == 1 && i + 36 < moovBytes.length) {
-          final timescale = (moovBytes[i + 24] << 24) |
-              (moovBytes[i + 25] << 16) |
-              (moovBytes[i + 26] << 8) |
-              moovBytes[i + 27];
+          final timescale = (moovBytes[i + 24] << 24) | (moovBytes[i + 25] << 16) | (moovBytes[i + 26] << 8) | moovBytes[i + 27];
           int dur = 0;
           for (int k = 0; k < 8; k++) {
             dur = (dur << 8) | moovBytes[i + 28 + k];
@@ -438,23 +415,16 @@ class LocalPodcastService {
 
   static String? _extractMp4Title(Uint8List moovBytes) {
     for (int i = 0; i < moovBytes.length - 16; i++) {
-      if (moovBytes[i] == 0xA9 &&
-          moovBytes[i + 1] == 0x6E &&
-          moovBytes[i + 2] == 0x61 &&
-          moovBytes[i + 3] == 0x6D) { // '©nam'
-        int boxSize = (moovBytes[i - 4] << 24) |
-            (moovBytes[i - 3] << 16) |
-            (moovBytes[i - 2] << 8) |
-            moovBytes[i - 1];
+      if (moovBytes[i] == 0xA9 && moovBytes[i + 1] == 0x6E && moovBytes[i + 2] == 0x61 && moovBytes[i + 3] == 0x6D) {
+        // '©nam'
+        int boxSize = (moovBytes[i - 4] << 24) | (moovBytes[i - 3] << 16) | (moovBytes[i - 2] << 8) | moovBytes[i - 1];
         if (boxSize <= 8 || i - 4 + boxSize > moovBytes.length) {
           boxSize = moovBytes.length - (i - 4);
         }
         final namPayload = moovBytes.sublist(i + 4, i - 4 + boxSize);
         for (int j = 0; j < namPayload.length - 8; j++) {
-          if (namPayload[j] == 0x64 &&
-              namPayload[j + 1] == 0x61 &&
-              namPayload[j + 2] == 0x74 &&
-              namPayload[j + 3] == 0x61) { // 'data'
+          if (namPayload[j] == 0x64 && namPayload[j + 1] == 0x61 && namPayload[j + 2] == 0x74 && namPayload[j + 3] == 0x61) {
+            // 'data'
             if (j + 12 < namPayload.length) {
               return const Utf8Decoder(allowMalformed: true).convert(namPayload.sublist(j + 12)).trim();
             }
@@ -488,11 +458,7 @@ class LocalPodcastService {
           final info = raf.readSync(length.clamp(0, 34));
           if (info.length >= 18) {
             final sampleRate = (info[10] << 12) | (info[11] << 4) | (info[12] >> 4);
-            final totalSamples = ((info[13] & 0x0F) << 32) |
-                (info[14] << 24) |
-                (info[15] << 16) |
-                (info[16] << 8) |
-                info[17];
+            final totalSamples = ((info[13] & 0x0F) << 32) | (info[14] << 24) | (info[15] << 16) | (info[16] << 8) | info[17];
             if (sampleRate > 0 && totalSamples > 0) {
               duration = Duration(seconds: (totalSamples / sampleRate).round());
             }
@@ -517,6 +483,21 @@ class LocalPodcastService {
     } catch (_) {}
 
     return _AudioMetadata(coverBytes: coverBytes, duration: duration ?? Duration.zero);
+  }
+
+  /// Redimensiona os bytes de uma imagem para no máximo [maxSize]x[maxSize] px.
+  /// Retorna os bytes originais se o processo falhar.
+  static Future<Uint8List> _resizeImageBytes(Uint8List bytes, int maxSize) async {
+    try {
+      final codec = await ui.instantiateImageCodec(bytes, targetWidth: maxSize, targetHeight: maxSize);
+      final frame = await codec.getNextFrame();
+      final byteData = await frame.image.toByteData(format: ui.ImageByteFormat.png);
+      frame.image.dispose();
+      if (byteData != null) {
+        return byteData.buffer.asUint8List();
+      }
+    } catch (_) {}
+    return bytes;
   }
 
   static int? _findImageOffset(Uint8List data, [int start = 0]) {
@@ -690,11 +671,7 @@ class LocalPodcastService {
     return '$hours:$minutes:$seconds.$ms';
   }
 
-  Future<List<Chapter>> saveChapter({
-    required Episode episode,
-    required Chapter chapter,
-    Chapter? oldChapter,
-  }) async {
+  Future<List<Chapter>> saveChapter({required Episode episode, required Chapter chapter, Chapter? oldChapter}) async {
     if (episode.filePath == null) return episode.chapters;
 
     final audioFile = File(episode.filePath!);
@@ -732,10 +709,7 @@ class LocalPodcastService {
     updatedChapters.sort((a, b) => a.startTime.compareTo(b.startTime));
 
     final jsonList = updatedChapters.map((c) {
-      return {
-        'start': formatDurationTimestamp(c.startTime),
-        'title': c.title,
-      };
+      return {'start': formatDurationTimestamp(c.startTime), 'title': c.title};
     }).toList();
 
     const encoder = JsonEncoder.withIndent('  ');
@@ -746,10 +720,7 @@ class LocalPodcastService {
     return updatedChapters;
   }
 
-  Future<List<Chapter>> deleteChapter({
-    required Episode episode,
-    required Chapter chapter,
-  }) async {
+  Future<List<Chapter>> deleteChapter({required Episode episode, required Chapter chapter}) async {
     if (episode.filePath == null) return episode.chapters;
 
     final audioFile = File(episode.filePath!);
@@ -773,10 +744,7 @@ class LocalPodcastService {
 
     if (targetFile != null) {
       final jsonList = updatedChapters.map((c) {
-        return {
-          'start': formatDurationTimestamp(c.startTime),
-          'title': c.title,
-        };
+        return {'start': formatDurationTimestamp(c.startTime), 'title': c.title};
       }).toList();
 
       const encoder = JsonEncoder.withIndent('  ');

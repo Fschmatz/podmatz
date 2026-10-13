@@ -2,9 +2,6 @@ import 'package:flutter/painting.dart';
 import 'package:material_shapes/material_shapes.dart';
 
 abstract final class ShapeValues {
-  //static final RoundedPolygon cover = MaterialShapes.clover4Leaf;
-  //static final RoundedPolygon coverFocused = MaterialShapes.cookie7Sided;
-
   static final RoundedPolygon cover = MaterialShapes.cookie7Sided;
   static final RoundedPolygon coverFocused = MaterialShapes.cookie4Sided;
   static final RoundedPolygon heroButtonShape = MaterialShapes.cookie7Sided;

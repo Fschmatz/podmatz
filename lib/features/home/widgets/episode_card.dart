@@ -32,7 +32,6 @@ class _EpisodeCardState extends State<EpisodeCard> {
     final bool showCover = locator<AudioPlayerCubit>().state.showEpisodeCover;
     final double progress = showProgress ? episode.progress : 0.0;
     final Color fill = cs.secondaryContainer.withValues(alpha: 0.75);
-    final Color onFill = cs.onSurface;
 
     return SingleMotionBuilder(
       motion: const MaterialSpringMotion.standardSpatialFast(),
@@ -57,12 +56,7 @@ class _EpisodeCardState extends State<EpisodeCard> {
             ),
           ),
           _content(context, cs, cs.onSurface, showCover),
-          Positioned.fill(
-            child: ClipRect(
-              clipper: _FillClipper(start: _kFillStart, fraction: progress),
-              child: _content(context, cs, onFill, showCover),
-            ),
-          ),
+
           Positioned.fill(
             child: Material(
               color: Colors.transparent,
@@ -76,9 +70,7 @@ class _EpisodeCardState extends State<EpisodeCard> {
 
   Widget _content(BuildContext context, ColorScheme cs, Color fg, bool showCover) {
     final Episode episode = widget.episode;
-    final TextTheme tt = Theme
-        .of(context)
-        .textTheme;
+    final TextTheme tt = Theme.of(context).textTheme;
     final double cardPadding = showCover ? 12 : 16;
 
     return Padding(
@@ -89,11 +81,10 @@ class _EpisodeCardState extends State<EpisodeCard> {
             SingleMotionBuilder(
               motion: const MaterialSpringMotion.standardSpatialFast(),
               value: widget.playing ? 1.0 : 0.0,
-              builder: (context, t, child) =>
-                  ClipPath(
-                    clipper: ShapeBorderClipper(shape: ShapeValues.coverBorder(t)),
-                    child: child,
-                  ),
+              builder: (context, t, child) => ClipPath(
+                clipper: ShapeBorderClipper(shape: ShapeValues.coverBorder(t)),
+                child: child,
+              ),
               child: SizedBox(
                 width: 62,
                 height: 62,
@@ -172,9 +163,9 @@ class _Cover extends StatelessWidget {
     return SmoothImage(
       url: episode.image,
       imageBytes: episode.imageBytes,
-      placeholderColor: scheme.primaryContainer,
-      placeholderChild: Icon(Icons.podcasts_rounded, color: scheme.onPrimaryContainer),
-      errorChild: Icon(Icons.podcasts_rounded, color: scheme.onPrimaryContainer),
+      placeholderColor: scheme.tertiaryContainer,
+      placeholderChild: Icon(Icons.podcasts_rounded, color: scheme.onTertiaryContainer),
+      errorChild: Icon(Icons.podcasts_rounded, color: scheme.onTertiaryContainer),
     );
   }
 }

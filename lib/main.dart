@@ -27,6 +27,8 @@ void main() async {
     return FriendlyErrorView(details: details);
   };
 
+  await PreferencesHelper.init();
+
   final isDark = await PreferencesHelper.isDarkMode();
   final initialThemeMode = isDark ? ThemeMode.dark : ThemeMode.light;
 

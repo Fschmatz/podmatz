@@ -108,28 +108,20 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
     _audioPlayer.positionStream.listen((pos) {
       if (!_audioPlayer.playing) return;
-      final currentPath = state.currentEpisode?.filePath;
-      List<Episode> updatedEpisodes = state.episodes;
+
+      // Only update position + currentEpisode here.
+      // The episodes list is synced in _persistPosition (every 5 s) to avoid
+      // rebuilding the entire list on every position tick.
       Episode? updatedCurrent = state.currentEpisode;
-
-      if (currentPath != null) {
-        updatedEpisodes = state.episodes.map((ep) {
-          if (ep.filePath == currentPath) {
-            return ep.copyWith(listened: pos);
-          }
-          return ep;
-        }).toList();
-
-        if (updatedCurrent != null && updatedCurrent.filePath == currentPath) {
-          updatedCurrent = updatedCurrent.copyWith(listened: pos);
-        }
+      if (updatedCurrent != null) {
+        updatedCurrent = updatedCurrent.copyWith(listened: pos);
       }
 
-      emit(state.copyWith(position: pos, episodes: updatedEpisodes, currentEpisode: updatedCurrent));
+      emit(state.copyWith(position: pos, currentEpisode: updatedCurrent));
 
-      // Debounce: save position at most every 5 seconds
+      // Debounce: save position at most every 30 seconds
       final now = DateTime.now();
-      if (now.difference(_lastPositionSave).inSeconds >= 5) {
+      if (now.difference(_lastPositionSave).inSeconds >= 30) {
         _persistPosition();
       }
     });
@@ -169,18 +161,34 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     });
 
     _restoreSavedState();
-    loadSavedSeekInterval();
-    _loadSavedPlaybackSpeed();
-    _loadSavedGroupFoldersView();
-    _loadSavedShowCardProgress();
-    _loadSavedShowEpisodeCover();
-    _loadSavedSkipSilence();
-    _loadSavedUseMiniPlayerOnHome();
+    _loadAllPrefs();
   }
 
-  Future<void> _loadSavedGroupFoldersView() async {
-    final enabled = await PreferencesHelper.getGroupFoldersView();
-    emit(state.copyWith(groupFoldersView: enabled));
+  /// Loads all user preferences in a single pass and emits one state update.
+  /// This replaces the previous pattern of 7 individual async loads each emitting
+  /// separately, which caused 7 consecutive rebuilds on startup.
+  Future<void> _loadAllPrefs() async {
+    final seekInterval = await PreferencesHelper.getSeekIntervalSeconds();
+    final speed = await PreferencesHelper.getPlaybackSpeed();
+    final groupFolders = await PreferencesHelper.getGroupFoldersView();
+    final showProgress = await PreferencesHelper.getShowCardProgress();
+    final showCover = await PreferencesHelper.getShowEpisodeCover();
+    final skipSilence = await PreferencesHelper.getSkipSilence();
+    final miniPlayer = await PreferencesHelper.getUseMiniPlayerOnHome();
+
+    emit(state.copyWith(
+      seekIntervalSeconds: seekInterval,
+      playbackSpeed: speed,
+      groupFoldersView: groupFolders,
+      showCardProgress: showProgress,
+      showEpisodeCover: showCover,
+      skipSilence: skipSilence,
+      useMiniPlayerOnHome: miniPlayer,
+    ));
+
+    // Apply audio player side effects after emitting
+    if (speed != 1.0) await _audioPlayer.setSpeed(speed);
+    await _audioPlayer.setSkipSilenceEnabled(skipSilence);
   }
 
   Future<void> setGroupFoldersView(bool enabled) async {
@@ -188,19 +196,9 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     emit(state.copyWith(groupFoldersView: enabled));
   }
 
-  Future<void> _loadSavedShowCardProgress() async {
-    final enabled = await PreferencesHelper.getShowCardProgress();
-    emit(state.copyWith(showCardProgress: enabled));
-  }
-
   Future<void> setShowCardProgress(bool enabled) async {
     await PreferencesHelper.setShowCardProgress(enabled);
     emit(state.copyWith(showCardProgress: enabled));
-  }
-
-  Future<void> _loadSavedShowEpisodeCover() async {
-    final enabled = await PreferencesHelper.getShowEpisodeCover();
-    emit(state.copyWith(showEpisodeCover: enabled));
   }
 
   Future<void> setShowEpisodeCover(bool enabled) async {
@@ -208,21 +206,10 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     emit(state.copyWith(showEpisodeCover: enabled));
   }
 
-  Future<void> _loadSavedSkipSilence() async {
-    final enabled = await PreferencesHelper.getSkipSilence();
-    emit(state.copyWith(skipSilence: enabled));
-    await _audioPlayer.setSkipSilenceEnabled(enabled);
-  }
-
   Future<void> setSkipSilence(bool enabled) async {
     await PreferencesHelper.setSkipSilence(enabled);
     await _audioPlayer.setSkipSilenceEnabled(enabled);
     emit(state.copyWith(skipSilence: enabled));
-  }
-
-  Future<void> _loadSavedUseMiniPlayerOnHome() async {
-    final enabled = await PreferencesHelper.getUseMiniPlayerOnHome();
-    emit(state.copyWith(useMiniPlayerOnHome: enabled));
   }
 
   Future<void> setUseMiniPlayerOnHome(bool enabled) async {
@@ -232,12 +219,24 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
   Future<void> _persistPosition() async {
     _lastPositionSave = DateTime.now();
+
+    // Sync the current episode's listened position back into the episodes list
+    // so EpisodeCard progress bars stay in sync (updated every 5 s, not every tick).
+    final currentPath = state.currentEpisode?.filePath;
+    final currentPos = state.position;
+    if (currentPath != null) {
+      final updatedEpisodes = state.episodes.map((ep) {
+        if (ep.filePath == currentPath) return ep.copyWith(listened: currentPos);
+        return ep;
+      }).toList();
+      emit(state.copyWith(episodes: updatedEpisodes));
+    }
+
     if (state.duration.inSeconds > 0) {
       await PreferencesHelper.setLastDurationSeconds(state.duration.inSeconds);
     }
-    final currentPath = state.currentEpisode?.filePath;
     if (currentPath != null) {
-      await PreferencesHelper.setEpisodePositionSeconds(currentPath, state.position.inSeconds);
+      await PreferencesHelper.setEpisodePositionSeconds(currentPath, currentPos.inSeconds);
     }
   }
 
@@ -250,12 +249,6 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     if (seconds <= 0) return;
     await PreferencesHelper.setSeekIntervalSeconds(seconds);
     emit(state.copyWith(seekIntervalSeconds: seconds));
-  }
-
-  Future<void> _loadSavedPlaybackSpeed() async {
-    final speed = await PreferencesHelper.getPlaybackSpeed();
-    emit(state.copyWith(playbackSpeed: speed));
-    await _audioPlayer.setSpeed(speed);
   }
 
   Future<void> setPlaybackSpeed(double speed) async {

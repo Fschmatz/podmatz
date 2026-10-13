@@ -1,9 +1,7 @@
 abstract final class AppValues {
-  static String get title => 'Podmatz';
-
-  static String get version => '1.2.5';
-
-  static String get nomePastaRaiz => 'Vários';
+  static const String title = 'Podmatz';
+  static const String version = '1.2.6';
+  static const String rootFolderName = 'Vários';
 
   // Config presets
   static const List<int> seekIntervals = [5, 10, 15, 30, 60];
