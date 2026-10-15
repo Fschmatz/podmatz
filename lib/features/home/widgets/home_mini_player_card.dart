@@ -106,7 +106,7 @@ class HomeMiniPlayerCard extends StatelessWidget {
                     child: SizedBox(
                       width: 60,
                       height: 60,
-                      child: Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded, color: cs.onPrimary, size: 30),
+                      child: Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded, color: cs.onPrimary, size: playing ? 30 : 32),
                     ),
                   ),
                 ),
