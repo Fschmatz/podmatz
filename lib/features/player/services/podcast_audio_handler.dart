@@ -70,6 +70,27 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> pause() => player.pause();
 
+  Future<void> playPause() async {
+    if (player.playing) {
+      await pause();
+    } else {
+      await play();
+    }
+  }
+
+  @override
+  Future<void> click([MediaButton button = MediaButton.media]) async {
+    switch (button) {
+      case MediaButton.media:
+      case MediaButton.next:
+        await playPause();
+        break;
+      case MediaButton.previous:
+        await rewind();
+        break;
+    }
+  }
+
   @override
   Future<void> stop() => player.stop();
 

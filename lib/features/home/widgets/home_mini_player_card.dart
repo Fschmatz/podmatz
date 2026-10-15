@@ -37,20 +37,24 @@ class HomeMiniPlayerCard extends StatelessWidget {
 
     return Container(
       clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(color: cs.primary, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 12, offset: const Offset(0, 4))],
+      ),
       child: Stack(
         children: [
-          Positioned(
+          /* Positioned(
             top: -30,
             right: -30,
             child: Opacity(
               opacity: 0.12,
               child: ClipPath(
                 clipper: ShapeBorderClipper(shape: MaterialShapeBorder(shape: MaterialShapes.sunny)),
-                child: SizedBox(width: 130, height: 130, child: ColoredBox(color: cs.onPrimary)),
+                child: SizedBox(width: 130, height: 130, child: ColoredBox(color: cs.onSecondaryContainer)),
               ),
             ),
-          ),
+          ),*/
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
@@ -65,7 +69,7 @@ class HomeMiniPlayerCard extends StatelessWidget {
                           channel.toUpperCase(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: tt.labelSmall?.copyWith(color: cs.onPrimary.withValues(alpha: 0.8), fontWeight: FontWeight.w600),
+                          style: tt.labelSmall?.copyWith(color: cs.onPrimaryContainer.withValues(alpha: 0.6), fontWeight: FontWeight.w600),
                         ),
                         2.gap,
                       ],
@@ -73,19 +77,19 @@ class HomeMiniPlayerCard extends StatelessWidget {
                         title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: tt.titleMedium?.copyWith(color: cs.onPrimary, fontWeight: FontWeight.w700),
+                        style: tt.titleMedium?.copyWith(color: cs.onPrimaryContainer, fontWeight: FontWeight.w700),
                       ),
                       4.gap,
                       Row(
                         children: [
                           Text(
                             '$posStr / $totalStr',
-                            style: tt.bodySmall?.copyWith(color: cs.onPrimary, fontWeight: FontWeight.w600),
+                            style: tt.bodySmall?.copyWith(color: cs.onPrimaryContainer.withValues(alpha: 0.6), fontWeight: FontWeight.w600),
                           ),
                           8.gap,
                           Text(
                             '•   Faltam $remainingStr',
-                            style: tt.bodySmall?.copyWith(color: cs.onPrimary.withValues(alpha: 0.8), fontWeight: FontWeight.w600),
+                            style: tt.bodySmall?.copyWith(color: cs.onPrimaryContainer.withValues(alpha: 0.6), fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
@@ -94,15 +98,15 @@ class HomeMiniPlayerCard extends StatelessWidget {
                 ),
                 12.gap,
                 Material(
-                  color: cs.onPrimary,
+                  color: cs.primary,
                   shape: MaterialShapeBorder(shape: ShapeValues.heroButtonShape),
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
                     onTap: onPlayPause,
                     child: SizedBox(
-                      width: 50,
-                      height: 50,
-                      child: Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded, color: cs.primary, size: 24),
+                      width: 60,
+                      height: 60,
+                      child: Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded, color: cs.onPrimary, size: 30),
                     ),
                   ),
                 ),

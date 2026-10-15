@@ -49,7 +49,8 @@ class _PlayerPageState extends State<PlayerPage> {
         final Duration speedAdjustedRemaining = Duration(seconds: (remaining.inSeconds / speed).round());
 
         final String timeLabel = ended ? totalDuration.remainingLabel : '-${remaining.remainingLabel}';
-        final String speedTimeLabel = speed != 1.0 && !ended ? '(-${speedAdjustedRemaining.remainingLabel} em ${speed.toStringAsFixed(1)}x)' : '';
+        final String formattedSpeed = speed.toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '');
+        final String speedTimeLabel = speed != 1.0 && !ended ? '(-${speedAdjustedRemaining.remainingLabel} em ${formattedSpeed}x)' : '';
 
         Chapter? currentChapter;
         if (pageEpisode.chapters.isNotEmpty) {
@@ -98,6 +99,7 @@ class _PlayerPageState extends State<PlayerPage> {
                 Text(
                   pageEpisode.title,
                   maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
                   style: tt.displaySmall?.copyWith(color: cs.primary, fontWeight: FontWeight.w800),
                 ),
                 8.gap,

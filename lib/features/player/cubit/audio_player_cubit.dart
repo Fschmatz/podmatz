@@ -21,7 +21,6 @@ class AudioPlayerState {
     this.showCardProgress = true,
     this.showEpisodeCover = true,
     this.skipSilence = false,
-    this.useMiniPlayerOnHome = false,
   });
 
   final Episode? currentEpisode;
@@ -37,7 +36,6 @@ class AudioPlayerState {
   final bool showCardProgress;
   final bool showEpisodeCover;
   final bool skipSilence;
-  final bool useMiniPlayerOnHome;
 
   AudioPlayerState copyWith({
     Episode? currentEpisode,
@@ -53,7 +51,6 @@ class AudioPlayerState {
     bool? showCardProgress,
     bool? showEpisodeCover,
     bool? skipSilence,
-    bool? useMiniPlayerOnHome,
   }) {
     return AudioPlayerState(
       currentEpisode: currentEpisode ?? this.currentEpisode,
@@ -69,7 +66,6 @@ class AudioPlayerState {
       showCardProgress: showCardProgress ?? this.showCardProgress,
       showEpisodeCover: showEpisodeCover ?? this.showEpisodeCover,
       skipSilence: skipSilence ?? this.skipSilence,
-      useMiniPlayerOnHome: useMiniPlayerOnHome ?? this.useMiniPlayerOnHome,
     );
   }
 }
@@ -174,7 +170,6 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     final showProgress = await PreferencesHelper.getShowCardProgress();
     final showCover = await PreferencesHelper.getShowEpisodeCover();
     final skipSilence = await PreferencesHelper.getSkipSilence();
-    final miniPlayer = await PreferencesHelper.getUseMiniPlayerOnHome();
 
     emit(state.copyWith(
       seekIntervalSeconds: seekInterval,
@@ -183,7 +178,6 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       showCardProgress: showProgress,
       showEpisodeCover: showCover,
       skipSilence: skipSilence,
-      useMiniPlayerOnHome: miniPlayer,
     ));
 
     // Apply audio player side effects after emitting
@@ -210,11 +204,6 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     await PreferencesHelper.setSkipSilence(enabled);
     await _audioPlayer.setSkipSilenceEnabled(enabled);
     emit(state.copyWith(skipSilence: enabled));
-  }
-
-  Future<void> setUseMiniPlayerOnHome(bool enabled) async {
-    await PreferencesHelper.setUseMiniPlayerOnHome(enabled);
-    emit(state.copyWith(useMiniPlayerOnHome: enabled));
   }
 
   Future<void> _persistPosition() async {

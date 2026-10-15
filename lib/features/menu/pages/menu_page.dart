@@ -194,17 +194,6 @@ class _Body extends StatelessWidget {
                     },
                   ),
                 ),
-                MenuTile(
-                  icon: Icons.aspect_ratio_outlined,
-                  title: 'Mini Player',
-                  subtitle: 'Exibir versão reduzida do player no topo da tela inicial',
-                  trailing: Switch(
-                    value: playerState.useMiniPlayerOnHome,
-                    onChanged: (val) {
-                      locator<AudioPlayerCubit>().setUseMiniPlayerOnHome(val);
-                    },
-                  ),
-                ),
               ],
             ),
 

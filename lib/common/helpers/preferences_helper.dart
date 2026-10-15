@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class PreferencesHelper {
   static SharedPreferences? _prefs;
+  static Future<SharedPreferences> get _instance async => _prefs ??= await SharedPreferences.getInstance();
 
   static Future<void> init() async {
     _prefs ??= await SharedPreferences.getInstance();
@@ -71,7 +72,8 @@ class PreferencesHelper {
   }
 
   static Future<int> getSeekIntervalSeconds() async {
-    return _prefs!.getInt(AppValues.prefKeySeekIntervalSec) ?? 15;
+    final prefs = _prefs ?? await _instance;
+    return prefs.getInt(AppValues.prefKeySeekIntervalSec) ?? 15;
   }
 
   static Future<void> setSeekIntervalSeconds(int seconds) async {
@@ -124,13 +126,5 @@ class PreferencesHelper {
 
   static Future<void> setSkipSilence(bool enabled) async {
     await _prefs!.setBool(AppValues.prefKeySkipSilence, enabled);
-  }
-
-  static Future<bool> getUseMiniPlayerOnHome() async {
-    return _prefs!.getBool(AppValues.prefKeyUseMiniPlayerOnHome) ?? false;
-  }
-
-  static Future<void> setUseMiniPlayerOnHome(bool enabled) async {
-    await _prefs!.setBool(AppValues.prefKeyUseMiniPlayerOnHome, enabled);
   }
 }

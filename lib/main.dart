@@ -10,6 +10,7 @@ late AudioHandler audioHandler;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await PreferencesHelper.init();
   await Permission.notification.request();
 
   audioHandler = await AudioService.init(
@@ -18,7 +19,7 @@ void main() async {
       androidNotificationChannelId: 'com.fschmatz.podmatz.channel.audio',
       androidNotificationChannelName: 'Podmatz Playback',
       androidNotificationOngoing: false,
-      androidStopForegroundOnPause: true,
+      androidStopForegroundOnPause: false,
       androidNotificationIcon: 'drawable/ic_notification',
     ),
   );
@@ -26,8 +27,6 @@ void main() async {
   ErrorWidget.builder = (details) {
     return FriendlyErrorView(details: details);
   };
-
-  await PreferencesHelper.init();
 
   final isDark = await PreferencesHelper.isDarkMode();
   final initialThemeMode = isDark ? ThemeMode.dark : ThemeMode.light;

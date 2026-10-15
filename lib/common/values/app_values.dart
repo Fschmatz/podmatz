@@ -1,6 +1,6 @@
 abstract final class AppValues {
   static const String title = 'Podmatz';
-  static const String version = '1.2.6';
+  static const String version = '1.2.8';
   static const String rootFolderName = 'Vários';
 
   // Config presets
@@ -18,7 +18,6 @@ abstract final class AppValues {
   static const String prefKeyShowEpisodeCover = 'show_episode_cover';
   static const String prefKeySkipSilence = 'skip_silence';
   static const String prefKeyCachedEpisodes = 'cached_episodes';
-  static const String prefKeyUseMiniPlayerOnHome = 'use_mini_player_on_home';
   static const String prefKeyThemeModeDark = 'theme_mode_dark';
 
   static String prefEpisodePosKey(String path) => 'pos_${path.hashCode}';

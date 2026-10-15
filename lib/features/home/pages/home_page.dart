@@ -115,133 +115,114 @@ class _HomePageState extends State<HomePage> {
         return Scaffold(
           backgroundColor: cs.surface,
           appBar: const HomeAppBar(),
-          body: Column(
+          body: Stack(
             children: [
-              if (playing != null)
-                Builder(
-                  builder: (context) {
-                    final bool isCurrentCard = state.currentEpisode?.filePath == playing.filePath;
-                    final Duration currentPos = isCurrentCard && state.position.inSeconds > 0 ? state.position : playing.listened;
-                    final Duration totalDur = isCurrentCard && state.duration.inSeconds > 0 ? state.duration : playing.total;
-                    final Duration remaining = totalDur > currentPos ? totalDur - currentPos : Duration.zero;
-                    final double cardProgress = totalDur.inSeconds > 0 ? (currentPos.inSeconds / totalDur.inSeconds).clamp(0.0, 1.0) : 0.0;
-
-                    return Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: GestureDetector(
-                        onTap: () => _openPlayer(context, playing),
-                        child: state.useMiniPlayerOnHome
-                            ? HomeMiniPlayerCard(
-                                scheme: playing.scheme(context),
-                                channel: playing.channel,
-                                title: playing.title,
-                                progress: cardProgress,
-                                position: currentPos,
-                                timeLeft: remaining,
-                                totalTime: totalDur,
-                                playing: state.isPlaying && state.currentEpisode?.filePath == playing.filePath,
-                                onPlayPause: () {
-                                  locator<AudioPlayerCubit>().playEpisode(playing);
-                                },
-                              )
-                            : HomePlayerCard(
-                                scheme: playing.scheme(context),
-                                imageUrl: playing.image,
-                                imageBytes: playing.imageBytes,
-                                channel: playing.channel,
-                                title: playing.title,
-                                progress: cardProgress,
-                                position: currentPos,
-                                timeLeft: remaining,
-                                totalTime: totalDur,
-                                coverShape: ShapeValues.coverFocused,
-                                playing: state.isPlaying && state.currentEpisode?.filePath == playing.filePath,
-                                onPlayPause: () {
-                                  locator<AudioPlayerCubit>().playEpisode(playing);
-                                },
-                              ),
-                      ),
-                    );
-                  },
-                ),
-
-              Expanded(
-                child: BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
-                  bloc: locator<AudioPlayerCubit>(),
-                  // Only rebuild the list when something list-relevant changes.
-                  // Position ticks are intentionally excluded to avoid per-second rebuilds.
-                  buildWhen: (prev, curr) =>
+              BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
+                bloc: locator<AudioPlayerCubit>(),
+                buildWhen: (prev, curr) =>
                     prev.episodes != curr.episodes ||
                     prev.groupFoldersView != curr.groupFoldersView ||
                     prev.showCardProgress != curr.showCardProgress ||
                     prev.isPlaying != curr.isPlaying ||
                     prev.currentEpisode?.filePath != curr.currentEpisode?.filePath,
-                  builder: (context, listState) {
-                    final List<Episode> listEpisodes = [...listState.episodes]
-                      ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+                builder: (context, listState) {
+                  final List<Episode> listEpisodes = [...listState.episodes]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
 
-                    if (!listState.groupFoldersView) {
-                      return ListView.builder(
-                        scrollCacheExtent: ScrollCacheExtent.pixels(600.0),
-                        padding: EdgeInsets.fromLTRB(16, 0, 16, BottomPadding.of(context) + 16),
-                        itemCount: listEpisodes.length,
-                        itemBuilder: (context, index) {
-                          final Episode ep = listEpisodes[index];
-                          final bool isCurrent = listState.currentEpisode?.filePath == ep.filePath;
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: EpisodeCard(
-                              episode: ep,
-                              playing: isCurrent && listState.isPlaying,
-                              showProgress: listState.showCardProgress,
-                              isGroupFoldersView: false,
-                              onTap: () => _openPlayer(context, ep),
-                            ),
-                          );
-                        },
-                      );
-                    }
+                  final bool hasPlayer = listState.currentEpisode != null || listEpisodes.isNotEmpty;
+                  final double listBottomPadding = BottomPadding.of(context) + (hasPlayer ? 120 : 16);
 
-                    final Map<String, List<Episode>> groupedEpisodes = {};
-                    for (final ep in listEpisodes) {
-                      final groupName = ep.channel.isNotEmpty ? ep.channel : AppValues.rootFolderName;
-                      groupedEpisodes.putIfAbsent(groupName, () => []).add(ep);
-                    }
-                    final sortedGroupKeys = groupedEpisodes.keys.toList()
-                      ..sort((a, b) {
-                        if (a == AppValues.rootFolderName) return 1;
-                        if (b == AppValues.rootFolderName) return -1;
-                        return a.compareTo(b);
-                      });
-
+                  if (!listState.groupFoldersView) {
                     return ListView.builder(
-                      controller: _scrollController,
                       scrollCacheExtent: ScrollCacheExtent.pixels(600.0),
-                      padding: EdgeInsets.fromLTRB(16, 0, 16, BottomPadding.of(context) + 16),
-                      itemCount: sortedGroupKeys.length,
-                      itemBuilder: (context, groupIndex) {
-                        final groupName = sortedGroupKeys[groupIndex];
-                        final groupList = [...groupedEpisodes[groupName]!]
-                          ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
-                        final bool isExpanded = _openGroupName == groupName;
+                      padding: EdgeInsets.fromLTRB(8, 0, 8, listBottomPadding),
+                      itemCount: listEpisodes.length,
+                      itemBuilder: (context, index) {
+                        final Episode ep = listEpisodes[index];
+                        final bool isCurrent = listState.currentEpisode?.filePath == ep.filePath;
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: FolderGroupTile(
-                            groupName: groupName,
-                            episodes: groupList,
-                            isExpanded: isExpanded,
-                            currentEpisodeFilePath: listState.currentEpisode?.filePath,
-                            isPlaying: listState.isPlaying,
-                            showCardProgress: listState.showCardProgress,
-                            onToggle: () => _toggleGroup(groupName),
-                            onEpisodeTap: (ep) => _openPlayer(context, ep),
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: EpisodeCard(
+                            episode: ep,
+                            playing: isCurrent && listState.isPlaying,
+                            showProgress: listState.showCardProgress,
+                            isGroupFoldersView: false,
+                            onTap: () => _openPlayer(context, ep),
                           ),
                         );
                       },
                     );
-                  },
-                ),
+                  }
+
+                  final Map<String, List<Episode>> groupedEpisodes = {};
+                  for (final ep in listEpisodes) {
+                    final groupName = ep.channel.isNotEmpty ? ep.channel : AppValues.rootFolderName;
+                    groupedEpisodes.putIfAbsent(groupName, () => []).add(ep);
+                  }
+                  final sortedGroupKeys = groupedEpisodes.keys.toList()
+                    ..sort((a, b) {
+                      if (a == AppValues.rootFolderName) return 1;
+                      if (b == AppValues.rootFolderName) return -1;
+                      return a.compareTo(b);
+                    });
+
+                  return ListView.builder(
+                    controller: _scrollController,
+                    scrollCacheExtent: ScrollCacheExtent.pixels(600.0),
+                    padding: EdgeInsets.fromLTRB(8, 0, 8, listBottomPadding),
+                    itemCount: sortedGroupKeys.length,
+                    itemBuilder: (context, groupIndex) {
+                      final groupName = sortedGroupKeys[groupIndex];
+                      final groupList = [...groupedEpisodes[groupName]!]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+                      final bool isExpanded = _openGroupName == groupName;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: FolderGroupTile(
+                          groupName: groupName,
+                          episodes: groupList,
+                          isExpanded: isExpanded,
+                          currentEpisodeFilePath: listState.currentEpisode?.filePath,
+                          isPlaying: listState.isPlaying,
+                          showCardProgress: listState.showCardProgress,
+                          onToggle: () => _toggleGroup(groupName),
+                          onEpisodeTap: (ep) => _openPlayer(context, ep),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
+              if (playing != null)
+                Positioned(
+                  left: 8,
+                  right: 8,
+                  bottom: BottomPadding.of(context) + 12,
+                  child: Builder(
+                    builder: (context) {
+                      final bool isCurrentCard = state.currentEpisode?.filePath == playing.filePath;
+                      final Duration currentPos = isCurrentCard && state.position.inSeconds > 0 ? state.position : playing.listened;
+                      final Duration totalDur = isCurrentCard && state.duration.inSeconds > 0 ? state.duration : playing.total;
+                      final Duration remaining = totalDur > currentPos ? totalDur - currentPos : Duration.zero;
+                      final double cardProgress = totalDur.inSeconds > 0 ? (currentPos.inSeconds / totalDur.inSeconds).clamp(0.0, 1.0) : 0.0;
+
+                      return GestureDetector(
+                        onTap: () => _openPlayer(context, playing),
+                        child: HomeMiniPlayerCard(
+                          scheme: playing.scheme(context),
+                          channel: playing.channel,
+                          title: playing.title,
+                          progress: cardProgress,
+                          position: currentPos,
+                          timeLeft: remaining,
+                          totalTime: totalDur,
+                          playing: state.isPlaying && state.currentEpisode?.filePath == playing.filePath,
+                          onPlayPause: () {
+                            locator<AudioPlayerCubit>().playEpisode(playing);
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
             ],
           ),
         );
