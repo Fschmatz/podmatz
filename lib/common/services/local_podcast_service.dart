@@ -100,6 +100,8 @@ class LocalPodcastService {
 
             final int savedPosSec = await PreferencesHelper.getEpisodePositionSeconds(entity.path);
             final Duration listenedDuration = Duration(seconds: savedPosSec);
+            final double? customSpeed = await PreferencesHelper.getEpisodeCustomSpeed(entity.path);
+            final bool? skipSilenceOverride = await PreferencesHelper.getEpisodeSkipSilenceOverride(entity.path);
 
             episodes.add(
               Episode(
@@ -114,6 +116,8 @@ class LocalPodcastService {
                 listened: listenedDuration,
                 filePath: entity.path,
                 chapters: meta.chapters,
+                customSpeed: customSpeed,
+                skipSilenceOverride: skipSilenceOverride,
               ),
             );
           }

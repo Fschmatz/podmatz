@@ -1,7 +1,7 @@
 name: podmatz
 description: "Local podcast player made with Flutter."
-publish_to: 'none'
-version: 1.2.8
+publish_to: "none"
+version: 1.2.9
 
 environment:
   sdk: ^3.12.2
@@ -23,6 +23,7 @@ dependencies:
   dynamic_system_colors: ^1.9.0
   just_audio: ^0.10.6
   audio_service: ^0.18.18
+  audio_session: ^0.2.4
 
 dev_dependencies:
   flutter_test:
@@ -31,4 +32,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-

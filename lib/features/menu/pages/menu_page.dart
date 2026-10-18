@@ -68,6 +68,7 @@ class _Body extends StatelessWidget {
   }
 
   void _showPlaybackSpeedDialog(BuildContext context, double current) {
+    final controller = TextEditingController(text: current.toString());
     showDialog(
       context: context,
       builder: (context) {
@@ -77,7 +78,7 @@ class _Body extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Selecione a velocidade desejada:'),
+              const Text('Selecione ou digite a velocidade desejada:'),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 8,
@@ -93,9 +94,28 @@ class _Body extends StatelessWidget {
                   );
                 }).toList(),
               ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Velocidade personalizada', border: OutlineInputBorder(), suffixText: 'x'),
+              ),
             ],
           ),
-          actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar'))],
+          actions: [
+            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
+            FilledButton(
+              onPressed: () {
+                final normalized = controller.text.replaceAll(',', '.').trim();
+                final val = double.tryParse(normalized);
+                if (val != null && val > 0 && val <= 4.0) {
+                  locator<AudioPlayerCubit>().setPlaybackSpeed(val);
+                }
+                Navigator.of(context).pop();
+              },
+              child: const Text('Salvar'),
+            ),
+          ],
         );
       },
     );

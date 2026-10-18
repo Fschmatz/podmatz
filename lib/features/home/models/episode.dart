@@ -18,6 +18,8 @@ class Episode {
     this.imageBytes,
     this.playing = false,
     this.chapters = const [],
+    this.customSpeed,
+    this.skipSilenceOverride,
   });
 
   final String channel;
@@ -32,6 +34,8 @@ class Episode {
   final Uint8List? imageBytes;
   final bool playing;
   final List<Chapter> chapters;
+  final double? customSpeed;
+  final bool? skipSilenceOverride;
 
   double get progress => total.inSeconds == 0 ? 0 : listened.inSeconds / total.inSeconds;
 
@@ -48,6 +52,10 @@ class Episode {
     Uint8List? imageBytes,
     bool? playing,
     List<Chapter>? chapters,
+    double? customSpeed,
+    bool clearCustomSpeed = false,
+    bool? skipSilenceOverride,
+    bool clearSkipSilenceOverride = false,
   }) {
     return Episode(
       channel: channel ?? this.channel,
@@ -62,6 +70,8 @@ class Episode {
       imageBytes: imageBytes ?? this.imageBytes,
       playing: playing ?? this.playing,
       chapters: chapters ?? this.chapters,
+      customSpeed: clearCustomSpeed ? null : (customSpeed ?? this.customSpeed),
+      skipSilenceOverride: clearSkipSilenceOverride ? null : (skipSilenceOverride ?? this.skipSilenceOverride),
     );
   }
 
@@ -79,6 +89,8 @@ class Episode {
         'filePath': filePath,
         if (imageBytes != null) 'imageBytes': base64Encode(imageBytes!),
         'chapters': chapters.map((c) => c.toJson()).toList(),
+        if (customSpeed != null) 'customSpeed': customSpeed,
+        if (skipSilenceOverride != null) 'skipSilenceOverride': skipSilenceOverride,
       };
 
   factory Episode.fromJson(Map<String, dynamic> json) => Episode(
@@ -93,5 +105,7 @@ class Episode {
         filePath: json['filePath'] as String?,
         imageBytes: json['imageBytes'] != null ? base64Decode(json['imageBytes'] as String) : null,
         chapters: (json['chapters'] as List<dynamic>?)?.map((c) => Chapter.fromJson(c as Map<String, dynamic>)).toList() ?? const [],
+        customSpeed: (json['customSpeed'] as num?)?.toDouble(),
+        skipSilenceOverride: json['skipSilenceOverride'] as bool?,
       );
 }

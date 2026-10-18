@@ -127,4 +127,36 @@ class PreferencesHelper {
   static Future<void> setSkipSilence(bool enabled) async {
     await _prefs!.setBool(AppValues.prefKeySkipSilence, enabled);
   }
+
+  static Future<double?> getEpisodeCustomSpeed(String filePath) async {
+    final prefs = _prefs ?? await _instance;
+    return prefs.getDouble(AppValues.prefEpisodeSpeedKey(filePath));
+  }
+
+  static Future<void> setEpisodeCustomSpeed(String filePath, double? speed) async {
+    final prefs = _prefs ?? await _instance;
+    final key = AppValues.prefEpisodeSpeedKey(filePath);
+    if (speed == null) {
+      await prefs.remove(key);
+    } else {
+      await prefs.setDouble(key, speed);
+    }
+  }
+
+  static Future<bool?> getEpisodeSkipSilenceOverride(String filePath) async {
+    final prefs = _prefs ?? await _instance;
+    final key = AppValues.prefEpisodeSkipSilenceKey(filePath);
+    if (!prefs.containsKey(key)) return null;
+    return prefs.getBool(key);
+  }
+
+  static Future<void> setEpisodeSkipSilenceOverride(String filePath, bool? override) async {
+    final prefs = _prefs ?? await _instance;
+    final key = AppValues.prefEpisodeSkipSilenceKey(filePath);
+    if (override == null) {
+      await prefs.remove(key);
+    } else {
+      await prefs.setBool(key, override);
+    }
+  }
 }

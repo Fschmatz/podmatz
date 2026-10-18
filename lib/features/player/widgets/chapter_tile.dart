@@ -26,12 +26,15 @@ class ChapterTile extends StatelessWidget {
     final ColorScheme cs = scheme;
     final TextTheme tt = Theme.of(context).textTheme;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(color: isActive ? cs.primaryContainer : cs.surfaceContainer, borderRadius: BorderRadius.circular(16)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: isActive ? cs.primaryContainer : cs.surfaceContainer,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         leading: Container(
           width: 36,
           height: 36,
@@ -82,6 +85,7 @@ class ChapterTile extends StatelessWidget {
           ],
         ),
         onTap: onTap,
+        ),
       ),
     );
   }

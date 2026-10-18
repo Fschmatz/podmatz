@@ -10,6 +10,27 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
   final AudioPlayer player = AudioPlayer();
 
   void _init() {
+    // Initial playback state
+    playbackState.add(
+      PlaybackState(
+        controls: const [MediaControl.rewind, MediaControl.play, MediaControl.fastForward],
+        systemActions: const {
+          MediaAction.play,
+          MediaAction.pause,
+          MediaAction.playPause,
+          MediaAction.stop,
+          MediaAction.seek,
+          MediaAction.seekForward,
+          MediaAction.seekBackward,
+          MediaAction.fastForward,
+          MediaAction.rewind,
+        },
+        androidCompactActionIndices: const [0, 1, 2],
+        processingState: AudioProcessingState.idle,
+        playing: false,
+      ),
+    );
+
     // Broadcast player state -> audio_service state
     player.playerStateStream.listen((playerState) {
       final playing = playerState.playing;
@@ -17,7 +38,12 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
 
       playbackState.add(
         playbackState.value.copyWith(
-          controls: [MediaControl.rewind, if (playing) MediaControl.pause else MediaControl.play, MediaControl.fastForward],
+          controls: [
+            MediaControl.rewind,
+            if (playing) MediaControl.pause else MediaControl.play,
+            MediaControl.fastForward,
+            if (!playing) MediaControl.stop,
+          ],
           systemActions: const {
             MediaAction.play,
             MediaAction.pause,
@@ -58,6 +84,13 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
         mediaItem.add(currentItem.copyWith(duration: duration));
       }
     });
+
+    player.playbackEventStream.listen(
+      (_) {},
+      onError: (Object e, StackTrace st) {
+        // Prevent uncaught stream errors from crashing the isolate
+      },
+    );
   }
 
   Future<int> _getSeekIntervalSeconds() async {
@@ -65,10 +98,27 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   @override
-  Future<void> play() => player.play();
+  Future<void> play() async {
+    try {
+      if (player.audioSource == null && mediaItem.value != null) {
+        final filePath = mediaItem.value!.id;
+        final savedPosSec = await PreferencesHelper.getEpisodePositionSeconds(filePath);
+        final initialPos = Duration(seconds: savedPosSec);
+        await player.setAudioSource(
+          AudioSource.file(filePath),
+          initialPosition: initialPos > Duration.zero ? initialPos : null,
+        );
+      }
+      await player.play();
+    } catch (_) {}
+  }
 
   @override
-  Future<void> pause() => player.pause();
+  Future<void> pause() async {
+    try {
+      await player.pause();
+    } catch (_) {}
+  }
 
   Future<void> playPause() async {
     if (player.playing) {
@@ -92,24 +142,43 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   @override
-  Future<void> stop() => player.stop();
+  Future<void> stop() async {
+    try {
+      await player.stop();
+    } catch (_) {}
+    playbackState.add(
+      playbackState.value.copyWith(
+        playing: false,
+        processingState: AudioProcessingState.idle,
+      ),
+    );
+    await super.stop();
+  }
 
   @override
-  Future<void> seek(Duration position) => player.seek(position);
+  Future<void> seek(Duration position) async {
+    try {
+      await player.seek(position);
+    } catch (_) {}
+  }
 
   @override
   Future<void> fastForward() async {
-    final seconds = await _getSeekIntervalSeconds();
-    final newPos = player.position + Duration(seconds: seconds);
-    final duration = player.duration ?? Duration.zero;
-    await player.seek(newPos > duration ? duration : newPos);
+    try {
+      final seconds = await _getSeekIntervalSeconds();
+      final newPos = player.position + Duration(seconds: seconds);
+      final duration = player.duration ?? Duration.zero;
+      await player.seek(newPos > duration ? duration : newPos);
+    } catch (_) {}
   }
 
   @override
   Future<void> rewind() async {
-    final seconds = await _getSeekIntervalSeconds();
-    final newPos = player.position - Duration(seconds: seconds);
-    await player.seek(newPos < Duration.zero ? Duration.zero : newPos);
+    try {
+      final seconds = await _getSeekIntervalSeconds();
+      final newPos = player.position - Duration(seconds: seconds);
+      await player.seek(newPos < Duration.zero ? Duration.zero : newPos);
+    } catch (_) {}
   }
 
   @override

@@ -7,4 +7,5 @@ export 'widgets/chapter_tile.dart';
 export 'widgets/current_chapter_card.dart';
 export 'widgets/chapters_bottom_sheet.dart';
 export 'widgets/add_chapter_dialog.dart';
+export 'widgets/episode_settings_bottom_sheet.dart';
 

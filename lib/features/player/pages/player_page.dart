@@ -45,7 +45,9 @@ class _PlayerPageState extends State<PlayerPage> {
         final bool ended = totalDuration.inSeconds > 0 && displayPos >= totalDuration;
 
         // Calculate time left accounting for playback speed (e.g. 1.2x)
-        final double speed = playerState.playbackSpeed > 0 ? playerState.playbackSpeed : 1.0;
+        final double speed = (pageEpisode.customSpeed ?? playerState.playbackSpeed) > 0
+            ? (pageEpisode.customSpeed ?? playerState.playbackSpeed)
+            : 1.0;
         final Duration speedAdjustedRemaining = Duration(seconds: (remaining.inSeconds / speed).round());
 
         final String timeLabel = ended ? totalDuration.remainingLabel : '-${remaining.remainingLabel}';
@@ -75,6 +77,18 @@ class _PlayerPageState extends State<PlayerPage> {
                 tooltip: 'Adicionar Capítulo',
                 onPressed: () {
                   AddChapterDialog.show(context, episode: pageEpisode, initialTime: displayPos);
+                },
+              ),
+              IconButton(
+                icon: Badge(
+                  isLabelVisible: pageEpisode.customSpeed != null || pageEpisode.skipSilenceOverride != null,
+                  smallSize: 8,
+                  backgroundColor: cs.primary,
+                  child: const Icon(Icons.tune_rounded),
+                ),
+                tooltip: 'Opções do Episódio',
+                onPressed: () {
+                  EpisodeSettingsBottomSheet.show(context, episode: pageEpisode);
                 },
               ),
             ],

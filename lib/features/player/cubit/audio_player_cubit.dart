@@ -94,6 +94,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     _audioPlayer.playerStateStream.listen((playerState) {
       final playing = playerState.playing;
       final processingState = playerState.processingState;
+
+      if (processingState != ProcessingState.idle) {
+        _isSourceLoaded = true;
+      }
+
       emit(state.copyWith(isPlaying: playing));
 
       // Save position when paused or completed
@@ -181,8 +186,12 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     ));
 
     // Apply audio player side effects after emitting
-    if (speed != 1.0) await _audioPlayer.setSpeed(speed);
-    await _audioPlayer.setSkipSilenceEnabled(skipSilence);
+    final currentEpisode = state.currentEpisode;
+    final effectiveSpeed = currentEpisode?.customSpeed ?? speed;
+    final effectiveSkipSilence = currentEpisode?.skipSilenceOverride ?? skipSilence;
+
+    await _audioPlayer.setSpeed(effectiveSpeed);
+    await _audioPlayer.setSkipSilenceEnabled(effectiveSkipSilence);
   }
 
   Future<void> setGroupFoldersView(bool enabled) async {
@@ -202,7 +211,9 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
   Future<void> setSkipSilence(bool enabled) async {
     await PreferencesHelper.setSkipSilence(enabled);
-    await _audioPlayer.setSkipSilenceEnabled(enabled);
+    if (state.currentEpisode?.skipSilenceOverride == null) {
+      await _audioPlayer.setSkipSilenceEnabled(enabled);
+    }
     emit(state.copyWith(skipSilence: enabled));
   }
 
@@ -243,7 +254,9 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   Future<void> setPlaybackSpeed(double speed) async {
     if (speed <= 0) return;
     await PreferencesHelper.setPlaybackSpeed(speed);
-    await _audioPlayer.setSpeed(speed);
+    if (state.currentEpisode?.customSpeed == null) {
+      await _audioPlayer.setSpeed(speed);
+    }
     emit(state.copyWith(playbackSpeed: speed));
   }
 
@@ -258,12 +271,18 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       final lastPlayedPath = await PreferencesHelper.getLastPlayedPath();
       final lastDurationSec = await PreferencesHelper.getLastDurationSeconds();
 
-      // Enrich every episode with its up-to-date saved position
+      // Enrich every episode with its up-to-date saved position, speed, and skip silence
       final enrichedEpisodes = await Future.wait(
         cachedEpisodes.map((ep) async {
           if (ep.filePath == null) return ep;
           final posSec = await PreferencesHelper.getEpisodePositionSeconds(ep.filePath!);
-          return posSec > 0 ? ep.copyWith(listened: Duration(seconds: posSec)) : ep;
+          final speed = await PreferencesHelper.getEpisodeCustomSpeed(ep.filePath!);
+          final skipSilence = await PreferencesHelper.getEpisodeSkipSilenceOverride(ep.filePath!);
+          return ep.copyWith(
+            listened: posSec > 0 ? Duration(seconds: posSec) : ep.listened,
+            customSpeed: speed,
+            skipSilenceOverride: skipSilence,
+          );
         }),
       );
 
@@ -303,12 +322,18 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     if (savedPath != null) {
       final list = await _podcastService.scanFolder(savedPath);
 
-      // Enrich every episode with its up-to-date saved position before caching
+      // Enrich every episode with its up-to-date saved position, speed, and skip silence before caching
       final enrichedList = await Future.wait(
         list.map((ep) async {
           if (ep.filePath == null) return ep;
           final posSec = await PreferencesHelper.getEpisodePositionSeconds(ep.filePath!);
-          return posSec > 0 ? ep.copyWith(listened: Duration(seconds: posSec)) : ep;
+          final speed = await PreferencesHelper.getEpisodeCustomSpeed(ep.filePath!);
+          final skipSilence = await PreferencesHelper.getEpisodeSkipSilenceOverride(ep.filePath!);
+          return ep.copyWith(
+            listened: posSec > 0 ? Duration(seconds: posSec) : ep.listened,
+            customSpeed: speed,
+            skipSilenceOverride: skipSilence,
+          );
         }),
       );
       await PreferencesHelper.setCachedEpisodes(enrichedList);
@@ -467,9 +492,10 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         emit(state.copyWith(isPlaying: true));
         _updateMediaItem(episode);
         await _audioPlayer.setAudioSource(AudioSource.file(episode.filePath!), initialPosition: savedPosition > Duration.zero ? savedPosition : null);
-        if (state.playbackSpeed != 1.0) {
-          await _audioPlayer.setSpeed(state.playbackSpeed);
-        }
+        final effectiveSpeed = episode.customSpeed ?? state.playbackSpeed;
+        final effectiveSkipSilence = episode.skipSilenceOverride ?? state.skipSilence;
+        await _audioPlayer.setSpeed(effectiveSpeed);
+        await _audioPlayer.setSkipSilenceEnabled(effectiveSkipSilence);
         await _audioPlayer.play();
       } catch (e) {
         _isSourceLoaded = false;
@@ -493,9 +519,10 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       emit(state.copyWith(currentEpisode: updatedCurrent, position: initialPos, duration: updatedCurrent.total));
       _updateMediaItem(updatedCurrent);
       await _audioPlayer.setAudioSource(AudioSource.file(episode.filePath!), initialPosition: initialPos > Duration.zero ? initialPos : null);
-      if (state.playbackSpeed != 1.0) {
-        await _audioPlayer.setSpeed(state.playbackSpeed);
-      }
+      final effectiveSpeed = updatedCurrent.customSpeed ?? state.playbackSpeed;
+      final effectiveSkipSilence = updatedCurrent.skipSilenceOverride ?? state.skipSilence;
+      await _audioPlayer.setSpeed(effectiveSpeed);
+      await _audioPlayer.setSkipSilenceEnabled(effectiveSkipSilence);
       await _audioPlayer.play();
     } catch (e) {
       _isSourceLoaded = false;
@@ -620,6 +647,60 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     Episode? updatedCurrent = state.currentEpisode;
     if (updatedCurrent != null && updatedCurrent.filePath == episode.filePath) {
       updatedCurrent = updatedCurrent.copyWith(chapters: updatedChapters);
+    }
+
+    await PreferencesHelper.setCachedEpisodes(updatedEpisodes);
+
+    emit(state.copyWith(
+      episodes: updatedEpisodes,
+      currentEpisode: updatedCurrent,
+    ));
+  }
+
+  Future<void> setEpisodeCustomSpeed(Episode episode, double? speed) async {
+    if (episode.filePath == null) return;
+
+    await PreferencesHelper.setEpisodeCustomSpeed(episode.filePath!, speed);
+
+    final updatedEpisodes = state.episodes.map((ep) {
+      if (ep.filePath == episode.filePath) {
+        return ep.copyWith(customSpeed: speed, clearCustomSpeed: speed == null);
+      }
+      return ep;
+    }).toList();
+
+    Episode? updatedCurrent = state.currentEpisode;
+    if (updatedCurrent != null && updatedCurrent.filePath == episode.filePath) {
+      updatedCurrent = updatedCurrent.copyWith(customSpeed: speed, clearCustomSpeed: speed == null);
+      final effectiveSpeed = speed ?? state.playbackSpeed;
+      await _audioPlayer.setSpeed(effectiveSpeed);
+    }
+
+    await PreferencesHelper.setCachedEpisodes(updatedEpisodes);
+
+    emit(state.copyWith(
+      episodes: updatedEpisodes,
+      currentEpisode: updatedCurrent,
+    ));
+  }
+
+  Future<void> setEpisodeSkipSilenceOverride(Episode episode, bool? override) async {
+    if (episode.filePath == null) return;
+
+    await PreferencesHelper.setEpisodeSkipSilenceOverride(episode.filePath!, override);
+
+    final updatedEpisodes = state.episodes.map((ep) {
+      if (ep.filePath == episode.filePath) {
+        return ep.copyWith(skipSilenceOverride: override, clearSkipSilenceOverride: override == null);
+      }
+      return ep;
+    }).toList();
+
+    Episode? updatedCurrent = state.currentEpisode;
+    if (updatedCurrent != null && updatedCurrent.filePath == episode.filePath) {
+      updatedCurrent = updatedCurrent.copyWith(skipSilenceOverride: override, clearSkipSilenceOverride: override == null);
+      final effectiveSkipSilence = override ?? state.skipSilence;
+      await _audioPlayer.setSkipSilenceEnabled(effectiveSkipSilence);
     }
 
     await PreferencesHelper.setCachedEpisodes(updatedEpisodes);
