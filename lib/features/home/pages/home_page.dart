@@ -129,12 +129,12 @@ class _HomePageState extends State<HomePage> {
                   final List<Episode> listEpisodes = [...listState.episodes]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
 
                   final bool hasPlayer = listState.currentEpisode != null || listEpisodes.isNotEmpty;
-                  final double listBottomPadding = BottomPadding.of(context) + (hasPlayer ? 120 : 16);
+                  final double listBottomPadding = BottomPadding.of(context) + (hasPlayer ? 136 : 16);
 
                   if (!listState.groupFoldersView) {
                     return ListView.builder(
                       scrollCacheExtent: ScrollCacheExtent.pixels(600.0),
-                      padding: EdgeInsets.fromLTRB(8, 0, 8, listBottomPadding),
+                      padding: EdgeInsets.fromLTRB(16, 0, 16, listBottomPadding),
                       itemCount: listEpisodes.length,
                       itemBuilder: (context, index) {
                         final Episode ep = listEpisodes[index];
@@ -168,7 +168,7 @@ class _HomePageState extends State<HomePage> {
                   return ListView.builder(
                     controller: _scrollController,
                     scrollCacheExtent: ScrollCacheExtent.pixels(600.0),
-                    padding: EdgeInsets.fromLTRB(8, 0, 8, listBottomPadding),
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, listBottomPadding),
                     itemCount: sortedGroupKeys.length,
                     itemBuilder: (context, groupIndex) {
                       final groupName = sortedGroupKeys[groupIndex];
@@ -193,9 +193,9 @@ class _HomePageState extends State<HomePage> {
               ),
               if (playing != null)
                 Positioned(
-                  left: 8,
-                  right: 8,
-                  bottom: BottomPadding.of(context) + 12,
+                  left: 16,
+                  right: 16,
+                  bottom: BottomPadding.of(context) + 8,
                   child: Builder(
                     builder: (context) {
                       final bool isCurrentCard = state.currentEpisode?.filePath == playing.filePath;

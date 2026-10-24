@@ -23,7 +23,7 @@ void main() async {
       androidNotificationChannelId: 'com.fschmatz.podmatz.channel.audio',
       androidNotificationChannelName: 'Podmatz Playback',
       androidNotificationOngoing: false,
-      androidStopForegroundOnPause: true,
+      androidStopForegroundOnPause: false,
       androidNotificationIcon: 'drawable/ic_notification',
     ),
   );

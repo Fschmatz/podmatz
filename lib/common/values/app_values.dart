@@ -1,11 +1,11 @@
 abstract final class AppValues {
   static const String title = 'Podmatz';
-  static const String version = '1.2.9';
+  static const String version = '1.2.10';
   static const String rootFolderName = 'Vários';
 
   // Config presets
   static const List<int> seekIntervals = [5, 10, 15, 30, 60];
-  static const List<double> playbackSpeeds = [1.0, 1.10, 1.15, 1.2, 1.25, 1.3, 1.5, 2.0, 3.0];
+  static const List<double> playbackSpeeds = [1.0, 1.10, 1.15, 1.2, 1.25, 1.3, 1.5, 2.0];
 
   // SharedPreferences Keys
   static const String prefKeyFolderPath = 'local_podcast_folder_path';

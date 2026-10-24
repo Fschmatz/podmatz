@@ -29,10 +29,10 @@ class CurrentChapterCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
+                  /* Text(
                     'Capítulo Atual',
                     style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant, fontWeight: FontWeight.w600),
-                  ),
+                  ), */
                   Text(
                     currentChapterTitle ?? 'Capítulos ($chaptersCount)',
                     style: tt.bodyMedium?.copyWith(color: cs.onSurface, fontWeight: FontWeight.bold),

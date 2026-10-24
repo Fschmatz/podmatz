@@ -11,8 +11,15 @@ class MenuPage extends StatelessWidget {
   }
 }
 
-class _Body extends StatelessWidget {
+class _Body extends StatefulWidget {
   const _Body();
+
+  @override
+  State<_Body> createState() => _BodyState();
+}
+
+class _BodyState extends State<_Body> {
+  bool _isScanning = false;
 
   void _showSeekIntervalDialog(BuildContext context, int current) {
     final controller = TextEditingController(text: current.toString());
@@ -119,6 +126,12 @@ class _Body extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _rescan() async {
+    setState(() => _isScanning = true);
+    await locator<AudioPlayerCubit>().loadSavedFolder();
+    if (mounted) setState(() => _isScanning = false);
   }
 
   @override
@@ -261,10 +274,23 @@ class _Body extends StatelessWidget {
                 MenuTile(
                   icon: Icons.refresh_outlined,
                   title: 'Re-escanear Pasta',
-                  onTap: () {
-                    locator<AudioPlayerCubit>().loadSavedFolder();
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pasta re-escaneada com sucesso.')));
-                  },
+                  trailing: _isScanning
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : null,
+                  onTap: _isScanning
+                      ? null
+                      : () async {
+                          await _rescan();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Pasta re-escaneada com sucesso.')),
+                            );
+                          }
+                        },
                 ),
               ],
             ),

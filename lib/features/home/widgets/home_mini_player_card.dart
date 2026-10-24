@@ -56,7 +56,7 @@ class HomeMiniPlayerCard extends StatelessWidget {
             ),
           ),*/
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.fromLTRB(14, 16, 12, 16),
             child: Row(
               children: [
                 Expanded(

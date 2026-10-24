@@ -451,7 +451,10 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     final initialPos = Duration(seconds: savedPosSec) > Duration.zero ? Duration(seconds: savedPosSec) : episode.listened;
 
     _isSourceLoaded = false;
-    await _audioPlayer.stop();
+    // Use _handler.stop() instead of _audioPlayer.stop() to ensure super.stop()
+    // is called, which properly clears the Android MediaSession before loading
+    // a new source. Bypassing this causes the notification to stop responding.
+    await _handler.stop();
 
     final updatedCurrent = episode.copyWith(listened: initialPos);
 
@@ -479,9 +482,9 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       if (_isSourceLoaded) {
         // Source is loaded — just toggle play/pause
         if (state.isPlaying) {
-          await _audioPlayer.pause();
+          await _handler.pause();
         } else {
-          await _audioPlayer.play();
+          await _handler.play();
         }
         return;
       }
@@ -514,8 +517,12 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     final updatedCurrent = episode.copyWith(listened: initialPos);
 
     try {
+      // Use _handler.stop() to ensure super.stop() is called, which properly
+      // resets the Android MediaSession before loading a new audio source.
+      // Direct _audioPlayer.stop() bypasses this and leaves the session in an
+      // invalid state, causing notification buttons to stop responding.
+      await _handler.stop();
       _isSourceLoaded = true;
-      await _audioPlayer.stop();
       emit(state.copyWith(currentEpisode: updatedCurrent, position: initialPos, duration: updatedCurrent.total));
       _updateMediaItem(updatedCurrent);
       await _audioPlayer.setAudioSource(AudioSource.file(episode.filePath!), initialPosition: initialPos > Duration.zero ? initialPos : null);
@@ -523,7 +530,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       final effectiveSkipSilence = updatedCurrent.skipSilenceOverride ?? state.skipSilence;
       await _audioPlayer.setSpeed(effectiveSpeed);
       await _audioPlayer.setSkipSilenceEnabled(effectiveSkipSilence);
-      await _audioPlayer.play();
+      await _handler.play();
     } catch (e) {
       _isSourceLoaded = false;
       emit(state.copyWith(isPlaying: false));
@@ -557,9 +564,9 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       return;
     }
     if (state.isPlaying) {
-      await _audioPlayer.pause();
+      await _handler.pause();
     } else {
-      await _audioPlayer.play();
+      await _handler.play();
     }
   }
 
