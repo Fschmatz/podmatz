@@ -34,11 +34,14 @@ class HomeMiniPlayerCard extends StatelessWidget {
     final String posStr = position.minutesLabel;
     final String remainingStr = timeLeft.minutesLabel;
     final String totalStr = totalTime != null && totalTime!.inSeconds > 0 ? totalTime!.minutesLabel : '--:--';
+    final Color backgroundColor = cs.primaryContainer;
+    final Color foregroundColor = cs.onPrimaryContainer;
+    final double textOpacity = 0.5;
 
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: cs.primaryContainer,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 12, offset: const Offset(0, 4))],
       ),
@@ -69,7 +72,10 @@ class HomeMiniPlayerCard extends StatelessWidget {
                           channel.toUpperCase(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: tt.labelSmall?.copyWith(color: cs.onPrimaryContainer.withValues(alpha: 0.6), fontWeight: FontWeight.w600),
+                          style: tt.labelSmall?.copyWith(
+                            color: foregroundColor.withValues(alpha: textOpacity),
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         2.gap,
                       ],
@@ -77,19 +83,25 @@ class HomeMiniPlayerCard extends StatelessWidget {
                         title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: tt.titleMedium?.copyWith(color: cs.onPrimaryContainer, fontWeight: FontWeight.w700),
+                        style: tt.titleMedium?.copyWith(color: foregroundColor, fontWeight: FontWeight.w700),
                       ),
                       4.gap,
                       Row(
                         children: [
                           Text(
                             '$posStr / $totalStr',
-                            style: tt.bodySmall?.copyWith(color: cs.onPrimaryContainer.withValues(alpha: 0.6), fontWeight: FontWeight.w600),
+                            style: tt.bodySmall?.copyWith(
+                              color: foregroundColor.withValues(alpha: textOpacity),
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                           8.gap,
                           Text(
                             '•   Faltam $remainingStr',
-                            style: tt.bodySmall?.copyWith(color: cs.onPrimaryContainer.withValues(alpha: 0.6), fontWeight: FontWeight.w600),
+                            style: tt.bodySmall?.copyWith(
+                              color: foregroundColor.withValues(alpha: textOpacity),
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ],
                       ),

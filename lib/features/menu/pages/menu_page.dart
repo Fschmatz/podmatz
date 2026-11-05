@@ -284,9 +284,10 @@ class _BodyState extends State<_Body> {
                   onTap: _isScanning
                       ? null
                       : () async {
+                          final messenger = ScaffoldMessenger.of(context);
                           await _rescan();
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               const SnackBar(content: Text('Pasta re-escaneada com sucesso.')),
                             );
                           }

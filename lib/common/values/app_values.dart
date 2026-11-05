@@ -1,6 +1,6 @@
 abstract final class AppValues {
   static const String title = 'Podmatz';
-  static const String version = '1.2.10';
+  static const String version = '1.2.11';
   static const String rootFolderName = 'Vários';
 
   // Config presets

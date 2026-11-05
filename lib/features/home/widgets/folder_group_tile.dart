@@ -28,7 +28,7 @@ class FolderGroupTile extends StatelessWidget {
     final ColorScheme cs = Theme.of(context).colorScheme;
 
     return Container(
-      decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -42,7 +42,10 @@ class FolderGroupTile extends StatelessWidget {
                   Container(
                     width: 40,
                     height: 40,
-                    decoration: BoxDecoration(color: cs.primaryContainer, borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(
+                      color: cs.primaryContainer.withValues(alpha: isExpanded ? 1 : 0.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     child: Icon(isExpanded ? Icons.folder_open_rounded : Icons.folder_rounded, color: cs.onPrimaryContainer, size: 22),
                   ),
                   12.gap,
@@ -52,7 +55,7 @@ class FolderGroupTile extends StatelessWidget {
                       children: [
                         Text(
                           groupName,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),

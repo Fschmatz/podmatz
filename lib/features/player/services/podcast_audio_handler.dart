@@ -1,6 +1,5 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
-import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:podmatz/podmatz.dart';
 
@@ -9,20 +8,7 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
     _init();
   }
 
-  static const MethodChannel _wakeLockChannel = MethodChannel('com.fschmatz.podmatz/wakelock');
-
   final AudioPlayer player = AudioPlayer();
-
-  /// Releases the AudioService native CPU WakeLock via reflection.
-  /// Safe to call even if the MethodChannel handler isn't registered yet.
-  void _releaseNativeWakeLock() {
-    _wakeLockChannel.invokeMethod<void>('releaseWakeLock').catchError((_) {});
-  }
-
-  /// Acquires the AudioService native CPU WakeLock via reflection.
-  void _acquireNativeWakeLock() {
-    _wakeLockChannel.invokeMethod<void>('acquireWakeLock').catchError((_) {});
-  }
 
   void _init() {
     // Initial playback state
@@ -45,59 +31,62 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
       ),
     );
 
-    // SYNCHRONOUS listener — no async/await here.
-    // WakeLock and AudioSession are managed in play() / pause() / stop() directly.
     player.playerStateStream.listen((playerState) {
-      final playing = playerState.playing;
-      final processingState = playerState.processingState;
-
-      playbackState.add(
-        playbackState.value.copyWith(
-          controls: [
-            MediaControl.rewind,
-            if (playing) MediaControl.pause else MediaControl.play,
-            MediaControl.fastForward,
-          ],
-          systemActions: const {
-            MediaAction.play,
-            MediaAction.pause,
-            MediaAction.playPause,
-            MediaAction.seek,
-            MediaAction.seekForward,
-            MediaAction.seekBackward,
-            MediaAction.fastForward,
-            MediaAction.rewind,
-          },
-          androidCompactActionIndices: const [0, 1, 2],
-          processingState:
-              const {
-                ProcessingState.idle: AudioProcessingState.idle,
-                ProcessingState.loading: AudioProcessingState.loading,
-                ProcessingState.buffering: AudioProcessingState.buffering,
-                ProcessingState.ready: AudioProcessingState.ready,
-                ProcessingState.completed: AudioProcessingState.completed,
-              }[processingState] ??
-              AudioProcessingState.idle,
-          playing: playing,
-          updatePosition: player.position,
-          bufferedPosition: player.bufferedPosition,
-          speed: player.speed,
-        ),
-      );
-    });
-
-    player.durationStream.listen((duration) {
-      final currentItem = mediaItem.value;
-      if (currentItem != null) {
-        mediaItem.add(currentItem.copyWith(duration: duration));
-      }
+      _broadcastState();
     });
 
     player.playbackEventStream.listen(
-      (_) {},
-      onError: (Object e, StackTrace st) {
-        // Prevent uncaught stream errors from crashing the isolate
+      (event) {
+        _broadcastState();
       },
+      onError: (Object e, StackTrace st) {
+        // ignore playback errors silently
+      },
+    );
+
+    player.durationStream.listen((duration) {
+      if (duration == null || duration.inSeconds <= 0) return;
+      final currentItem = mediaItem.value;
+      if (currentItem != null && currentItem.duration != duration) {
+        mediaItem.add(currentItem.copyWith(duration: duration));
+      }
+    });
+  }
+
+  void _broadcastState() {
+    final playing = player.playing;
+    final processingState = player.processingState;
+
+    playbackState.add(
+      playbackState.value.copyWith(
+        controls: [
+          MediaControl.rewind,
+          if (playing) MediaControl.pause else MediaControl.play,
+          MediaControl.fastForward,
+        ],
+        systemActions: const {
+          MediaAction.play,
+          MediaAction.pause,
+          MediaAction.playPause,
+          MediaAction.seek,
+          MediaAction.seekForward,
+          MediaAction.seekBackward,
+          MediaAction.fastForward,
+          MediaAction.rewind,
+        },
+        androidCompactActionIndices: const [0, 1, 2],
+        processingState: const {
+          ProcessingState.idle: AudioProcessingState.idle,
+          ProcessingState.loading: AudioProcessingState.loading,
+          ProcessingState.buffering: AudioProcessingState.buffering,
+          ProcessingState.ready: AudioProcessingState.ready,
+          ProcessingState.completed: AudioProcessingState.completed,
+        }[processingState] ?? AudioProcessingState.idle,
+        playing: playing,
+        updatePosition: player.position,
+        bufferedPosition: player.bufferedPosition,
+        speed: player.speed,
+      ),
     );
   }
 
@@ -105,14 +94,49 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
     return PreferencesHelper.getSeekIntervalSeconds();
   }
 
-  @override
-  Future<void> play() async {
+  /// Loads an audio source, updates audio focus and MediaItem.
+  /// If [autoPlay] is true, triggers playback immediately after preparing.
+  Future<void> prepareAndPlay({
+    required MediaItem item,
+    required String filePath,
+    required Duration initialPosition,
+    required double speed,
+    required bool skipSilence,
+    bool autoPlay = true,
+  }) async {
     try {
-      // Activate audio hardware session before playing
       final session = await AudioSession.instance;
       await session.setActive(true);
 
-      // Re-load source if it was cleared (e.g. after stop())
+      // Update media item before or together with setting source so notification is in sync
+      mediaItem.add(item);
+
+      // Load source without calling stop() which breaks the media session
+      await player.setAudioSource(
+        AudioSource.file(filePath),
+        initialPosition: initialPosition > Duration.zero ? initialPosition : null,
+      );
+
+      await player.setSpeed(speed);
+      await player.setSkipSilenceEnabled(skipSilence);
+
+      if (autoPlay) {
+        player.play().catchError((_) {
+          // ignore async play errors
+        });
+      }
+    } catch (_) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> play() async {
+    try {
+      final session = await AudioSession.instance;
+      await session.setActive(true);
+
+      // Re-load source if it was cleared
       if (player.audioSource == null && mediaItem.value != null) {
         final filePath = mediaItem.value!.id;
         final savedPosSec = await PreferencesHelper.getEpisodePositionSeconds(filePath);
@@ -123,25 +147,24 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
         );
       }
 
-      await player.play();
-
-      // Re-acquire WakeLock to keep CPU awake during playback
-      _acquireNativeWakeLock();
-    } catch (_) {}
+      // Start playback without blocking the MediaSession IPC callback.
+      // player.play() completes only when playback finishes or pauses in just_audio,
+      // which would keep this Future unresolved and cause Android notification timeouts.
+      player.play().catchError((_) {
+        // ignore async play errors
+      });
+    } catch (_) {
+      // ignore
+    }
   }
 
   @override
   Future<void> pause() async {
     try {
       await player.pause();
-
-      // Release WakeLock immediately on pause to allow CPU to sleep
-      _releaseNativeWakeLock();
-
-      // Deactivate audio hardware session so Android can reclaim resources
-      final session = await AudioSession.instance;
-      await session.setActive(false);
-    } catch (_) {}
+    } catch (_) {
+      // ignore
+    }
   }
 
   Future<void> playPause() async {
@@ -169,12 +192,11 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> stop() async {
     try {
       await player.stop();
-
-      // Release WakeLock and deactivate audio session on stop
-      _releaseNativeWakeLock();
       final session = await AudioSession.instance;
       await session.setActive(false);
-    } catch (_) {}
+    } catch (_) {
+      // ignore
+    }
 
     playbackState.add(
       playbackState.value.copyWith(
@@ -182,7 +204,6 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
         processingState: AudioProcessingState.idle,
       ),
     );
-    await super.stop();
   }
 
   @override
@@ -190,7 +211,9 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
     try {
       await player.seek(position);
       playbackState.add(playbackState.value.copyWith(updatePosition: position));
-    } catch (_) {}
+    } catch (_) {
+      // ignore
+    }
   }
 
   @override
@@ -202,7 +225,9 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
       final target = newPos > duration ? duration : newPos;
       await player.seek(target);
       playbackState.add(playbackState.value.copyWith(updatePosition: target));
-    } catch (_) {}
+    } catch (_) {
+      // ignore
+    }
   }
 
   @override
@@ -213,7 +238,9 @@ class PodcastAudioHandler extends BaseAudioHandler with SeekHandler {
       final target = newPos < Duration.zero ? Duration.zero : newPos;
       await player.seek(target);
       playbackState.add(playbackState.value.copyWith(updatePosition: target));
-    } catch (_) {}
+    } catch (_) {
+      // ignore
+    }
   }
 
   @override

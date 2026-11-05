@@ -1,7 +1,6 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:podmatz/podmatz.dart';
 
 import 'features/player/services/podcast_audio_handler.dart';
@@ -12,25 +11,28 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await PreferencesHelper.init();
-  await Permission.notification.request();
 
   final session = await AudioSession.instance;
-  await session.configure(const AudioSessionConfiguration.speech());
+  await session.configure(const AudioSessionConfiguration.music());
+
+  session.becomingNoisyEventStream.listen((_) {
+    audioHandler.pause();
+  });
 
   audioHandler = await AudioService.init(
     builder: () => PodcastAudioHandler(),
     config: const AudioServiceConfig(
       androidNotificationChannelId: 'com.fschmatz.podmatz.channel.audio',
       androidNotificationChannelName: 'Podmatz Playback',
-      androidNotificationOngoing: false,
-      androidStopForegroundOnPause: false,
+      androidNotificationOngoing: true,
+      androidStopForegroundOnPause: true,
       androidNotificationIcon: 'drawable/ic_notification',
     ),
   );
 
-  session.becomingNoisyEventStream.listen((_) {
-    audioHandler.pause();
-  });
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+  };
 
   ErrorWidget.builder = (details) {
     return FriendlyErrorView(details: details);

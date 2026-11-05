@@ -31,19 +31,16 @@ class _EpisodeCardState extends State<EpisodeCard> {
     final bool showProgress = widget.showProgress ?? locator<AudioPlayerCubit>().state.showCardProgress;
     final bool showCover = locator<AudioPlayerCubit>().state.showEpisodeCover;
     final double progress = showProgress ? episode.progress : 0.0;
-    final Color fill = cs.secondaryContainer.withValues(alpha: 0.75);
+    final Color fill = cs.secondaryContainer.withValues(alpha: 0.5);
 
     return SingleMotionBuilder(
       motion: const MaterialSpringMotion.standardSpatialFast(),
       value: playing ? 1.0 : 0.0,
       builder: (context, t, child) {
-        final double radius = 24 + (40 - 24) * t;
+        final double radius = 20 + (40 - 24) * t;
         return Container(
           clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            color: widget.isGroupFoldersView ? cs.surfaceContainer : cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(radius < 0 ? 0 : radius),
-          ),
+          decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(radius < 0 ? 0 : radius)),
           child: child,
         );
       },
