@@ -39,41 +39,35 @@ class PlayerControls extends StatelessWidget {
           height: heroSide,
           child: Row(
             children: [
+              Expanded(
+                child: SizedBox(
+                  height: heroSide,
+                  child: SeekButton(
+                    forward: false,
+                    color: tonal,
+                    iconColor: cs.onSurface,
+                    intervalSeconds: seekIntervalSeconds,
+                    onTap: onSeekBackward ?? () {},
+                  ),
+                ),
+              ),
+              _innerGap.gap,
               SizedBox(
                 width: heroSide,
                 height: heroSide,
                 child: PlayButton(playing: playing, color: cs.onSurface, foreground: cs.surface, onTap: onPlayPause),
               ),
-              _heroGap.gap,
+              _innerGap.gap,
               Expanded(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: heroSide,
-                        child: SeekButton(
-                          forward: false,
-                          color: tonal,
-                          iconColor: cs.onSurface,
-                          intervalSeconds: seekIntervalSeconds,
-                          onTap: onSeekBackward ?? () {},
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: _innerGap),
-                    Expanded(
-                      child: SizedBox(
-                        height: heroSide,
-                        child: SeekButton(
-                          forward: true,
-                          color: tonal,
-                          iconColor: cs.onSurface,
-                          intervalSeconds: seekIntervalSeconds,
-                          onTap: onSeekForward ?? () {},
-                        ),
-                      ),
-                    ),
-                  ],
+                child: SizedBox(
+                  height: heroSide,
+                  child: SeekButton(
+                    forward: true,
+                    color: tonal,
+                    iconColor: cs.onSurface,
+                    intervalSeconds: seekIntervalSeconds,
+                    onTap: onSeekForward ?? () {},
+                  ),
                 ),
               ),
             ],

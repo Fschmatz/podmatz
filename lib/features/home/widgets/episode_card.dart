@@ -8,15 +8,21 @@ class EpisodeCard extends StatefulWidget {
     required this.episode,
     required this.playing,
     required this.onTap,
-    this.showProgress,
+    this.onLongPress,
     required this.isGroupFoldersView,
+    this.borderRadius,
+    this.compact,
   });
 
   final Episode episode;
   final bool playing;
   final VoidCallback onTap;
-  final bool? showProgress;
+  final VoidCallback? onLongPress;
   final bool isGroupFoldersView;
+  final BorderRadius? borderRadius;
+  final bool? compact;
+
+  bool get isCompact => compact ?? locator<AudioPlayerCubit>().state.compactCards;
 
   @override
   State<EpisodeCard> createState() => _EpisodeCardState();
@@ -26,38 +32,21 @@ class _EpisodeCardState extends State<EpisodeCard> {
   @override
   Widget build(BuildContext context) {
     final Episode episode = widget.episode;
-    final bool playing = widget.playing;
     final ColorScheme cs = episode.scheme(context);
-    final bool showProgress = widget.showProgress ?? locator<AudioPlayerCubit>().state.showCardProgress;
     final bool showCover = locator<AudioPlayerCubit>().state.showEpisodeCover;
-    final double progress = showProgress ? episode.progress : 0.0;
-    final Color fill = cs.secondaryContainer.withValues(alpha: 0.5);
+    final BorderRadius effectiveRadius = widget.borderRadius ?? BorderRadius.circular(AppValues.defaultBorderRadius);
 
-    return SingleMotionBuilder(
-      motion: const MaterialSpringMotion.standardSpatialFast(),
-      value: playing ? 1.0 : 0.0,
-      builder: (context, t, child) {
-        final double radius = 20 + (40 - 24) * t;
-        return Container(
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(radius < 0 ? 0 : radius)),
-          child: child,
-        );
-      },
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: effectiveRadius),
       child: Stack(
         children: [
-          Positioned.fill(
-            child: ClipRect(
-              clipper: _FillClipper(start: _kFillStart, fraction: progress),
-              child: ColoredBox(color: fill),
-            ),
-          ),
           _content(context, cs, cs.onSurface, showCover),
 
           Positioned.fill(
             child: Material(
               color: Colors.transparent,
-              child: InkWell(onTap: widget.onTap),
+              child: InkWell(onTap: widget.onTap, onLongPress: widget.onLongPress),
             ),
           ),
         ],
@@ -68,10 +57,13 @@ class _EpisodeCardState extends State<EpisodeCard> {
   Widget _content(BuildContext context, ColorScheme cs, Color fg, bool showCover) {
     final Episode episode = widget.episode;
     final TextTheme tt = Theme.of(context).textTheme;
-    final double cardPadding = showCover ? 12 : 16;
+    final int titleMaxLines = widget.isCompact ? 1 : 2;
+    final TextStyle? titleStyle = widget.isCompact ? tt.titleSmall : tt.titleMedium;
+    final double coverSize = widget.isCompact ? AppValues.coverSizeCompact : AppValues.coverSize;
+    final EdgeInsetsGeometry cardPadding = EdgeInsets.fromLTRB(16, 12, 16, 12);
 
     return Padding(
-      padding: EdgeInsets.all(cardPadding),
+      padding: cardPadding,
       child: Row(
         children: [
           if (showCover) ...[
@@ -83,45 +75,46 @@ class _EpisodeCardState extends State<EpisodeCard> {
                 child: child,
               ),
               child: SizedBox(
-                width: 62,
-                height: 62,
-                child: _Cover(episode: episode, scheme: cs),
+                width: coverSize,
+                height: coverSize,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _Cover(episode: episode, scheme: cs),
+                    if (widget.playing)
+                      Container(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        child: Center(child: Icon(Icons.play_arrow_rounded, color: cs.primary, size: 32)),
+                      ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
           ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (episode.channel.isNotEmpty && episode.channel.toUpperCase() != 'PODCAST LOCAL') ...[
-                  Text(
-                    episode.channel.toUpperCase(),
-                    style: tt.labelSmall?.copyWith(color: fg.withValues(alpha: 0.5), fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 2),
-                ],
                 Text(
                   episode.title,
-                  style: tt.titleMedium?.copyWith(color: fg, fontWeight: FontWeight.w700),
-                  maxLines: 2,
+                  style: titleStyle?.copyWith(color: fg, fontWeight: FontWeight.w500),
+                  maxLines: titleMaxLines,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Builder(
                   builder: (_) {
                     final String totalStr = episode.total.inSeconds > 0 ? episode.total.minutesLabel : '--:--';
-                    final String timeText;
-                    if (episode.listened.inSeconds > 0) {
-                      final String posStr = episode.listened.minutesLabel;
-                      timeText = '$posStr / $totalStr';
-                    } else {
-                      timeText = totalStr;
-                    }
+                    final bool hasStarted = episode.listened.inMinutes >= 1;
+                    final String timeText = hasStarted ? '${episode.listened.minutesLabel} / $totalStr' : totalStr;
+
                     return Text(
                       timeText,
-                      style: tt.labelSmall?.copyWith(color: fg.withValues(alpha: 0.5), fontWeight: FontWeight.w700),
+                      style: tt.bodySmall?.copyWith(color: fg.withValues(alpha: 0.5), fontWeight: FontWeight.w700),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     );
                   },
                 ),
@@ -132,21 +125,6 @@ class _EpisodeCardState extends State<EpisodeCard> {
       ),
     );
   }
-}
-
-const double _kFillStart = 0;
-
-class _FillClipper extends CustomClipper<Rect> {
-  const _FillClipper({required this.start, required this.fraction});
-
-  final double start;
-  final double fraction;
-
-  @override
-  Rect getClip(Size size) => Rect.fromLTWH(start, 0, (size.width - start) * fraction, size.height);
-
-  @override
-  bool shouldReclip(_FillClipper oldClipper) => oldClipper.start != start || oldClipper.fraction != fraction;
 }
 
 class _Cover extends StatelessWidget {
@@ -160,9 +138,9 @@ class _Cover extends StatelessWidget {
     return SmoothImage(
       url: episode.image,
       imageBytes: episode.imageBytes,
-      placeholderColor: scheme.tertiaryContainer,
-      placeholderChild: Icon(Icons.podcasts_rounded, color: scheme.onTertiaryContainer),
-      errorChild: Icon(Icons.podcasts_rounded, color: scheme.onTertiaryContainer),
+      placeholderColor: scheme.secondaryContainer,
+      placeholderChild: Icon(Icons.podcasts_rounded, color: scheme.onSecondaryContainer),
+      errorChild: Icon(Icons.podcasts_rounded, color: scheme.onSecondaryContainer),
     );
   }
 }

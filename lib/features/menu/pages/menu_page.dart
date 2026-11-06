@@ -148,7 +148,7 @@ class _BodyState extends State<_Body> {
               margin: const EdgeInsets.fromLTRB(0, 0, 0, 24),
               elevation: 0,
               color: Theme.of(context).colorScheme.primaryContainer,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppValues.specialBorderRadius)),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
                 child: Column(
@@ -206,17 +206,6 @@ class _BodyState extends State<_Body> {
                   ),
                 ),
                 MenuTile(
-                  icon: Icons.subtitles_outlined,
-                  title: 'Progresso nos Cards',
-                  subtitle: 'Exibir andamento do episódio no fundo dos cards',
-                  trailing: Switch(
-                    value: playerState.showCardProgress,
-                    onChanged: (val) {
-                      locator<AudioPlayerCubit>().setShowCardProgress(val);
-                    },
-                  ),
-                ),
-                MenuTile(
                   icon: Icons.image_outlined,
                   title: 'Capa nos Cards',
                   subtitle: 'Exibir a capa do episódio nos cards',
@@ -224,6 +213,17 @@ class _BodyState extends State<_Body> {
                     value: playerState.showEpisodeCover,
                     onChanged: (val) {
                       locator<AudioPlayerCubit>().setShowEpisodeCover(val);
+                    },
+                  ),
+                ),
+                MenuTile(
+                  icon: Icons.view_agenda_outlined,
+                  title: 'Cards Compactos',
+                  subtitle: 'Exibir cards em formato compacto',
+                  trailing: Switch(
+                    value: playerState.compactCards,
+                    onChanged: (val) {
+                      locator<AudioPlayerCubit>().setCompactCards(val);
                     },
                   ),
                 ),
@@ -274,22 +274,14 @@ class _BodyState extends State<_Body> {
                 MenuTile(
                   icon: Icons.refresh_outlined,
                   title: 'Re-escanear Pasta',
-                  trailing: _isScanning
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : null,
+                  trailing: _isScanning ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : null,
                   onTap: _isScanning
                       ? null
                       : () async {
                           final messenger = ScaffoldMessenger.of(context);
                           await _rescan();
                           if (mounted) {
-                            messenger.showSnackBar(
-                              const SnackBar(content: Text('Pasta re-escaneada com sucesso.')),
-                            );
+                            messenger.showSnackBar(const SnackBar(content: Text('Pasta re-escaneada com sucesso.')));
                           }
                         },
                 ),

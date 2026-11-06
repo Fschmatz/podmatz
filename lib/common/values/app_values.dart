@@ -1,11 +1,17 @@
 abstract final class AppValues {
   static const String title = 'Podmatz';
-  static const String version = '1.2.11';
+  static const String version = '1.3.2';
   static const String rootFolderName = 'Vários';
 
-  // Config presets
+  // Presets
+  static const double defaultBorderRadius = 20;
+  static const double innerBorderRadius = 4;
+  static const double specialBorderRadius = 28;
+  static const double tileGap = 2;
   static const List<int> seekIntervals = [5, 10, 15, 30, 60];
   static const List<double> playbackSpeeds = [1.0, 1.10, 1.15, 1.2, 1.25, 1.3, 1.5, 2.0];
+  static const double coverSizeCompact = 42;
+  static const double coverSize = 52;
 
   // SharedPreferences Keys
   static const String prefKeyFolderPath = 'local_podcast_folder_path';
@@ -14,8 +20,8 @@ abstract final class AppValues {
   static const String prefKeySeekIntervalSec = 'seek_interval_seconds';
   static const String prefKeyPlaybackSpeed = 'playback_speed';
   static const String prefKeyGroupFoldersView = 'group_folders_view';
-  static const String prefKeyShowCardProgress = 'show_card_progress';
   static const String prefKeyShowEpisodeCover = 'show_episode_cover';
+  static const String prefKeyCompactCards = 'compact_cards';
   static const String prefKeySkipSilence = 'skip_silence';
   static const String prefKeyCachedEpisodes = 'cached_episodes';
   static const String prefKeyThemeModeDark = 'theme_mode_dark';

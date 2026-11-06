@@ -96,20 +96,20 @@ class PreferencesHelper {
     await _prefs!.setBool(AppValues.prefKeyGroupFoldersView, enabled);
   }
 
-  static Future<bool> getShowCardProgress() async {
-    return _prefs!.getBool(AppValues.prefKeyShowCardProgress) ?? true;
-  }
-
-  static Future<void> setShowCardProgress(bool enabled) async {
-    await _prefs!.setBool(AppValues.prefKeyShowCardProgress, enabled);
-  }
-
   static Future<bool> getShowEpisodeCover() async {
     return _prefs!.getBool(AppValues.prefKeyShowEpisodeCover) ?? true;
   }
 
   static Future<void> setShowEpisodeCover(bool enabled) async {
     await _prefs!.setBool(AppValues.prefKeyShowEpisodeCover, enabled);
+  }
+
+  static Future<bool> getCompactCards() async {
+    return _prefs!.getBool(AppValues.prefKeyCompactCards) ?? false;
+  }
+
+  static Future<void> setCompactCards(bool enabled) async {
+    await _prefs!.setBool(AppValues.prefKeyCompactCards, enabled);
   }
 
   static Future<bool> isDarkMode() async {

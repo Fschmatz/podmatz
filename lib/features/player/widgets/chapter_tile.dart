@@ -30,11 +30,11 @@ class ChapterTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: isActive ? cs.primaryContainer : cs.surfaceContainer,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppValues.defaultBorderRadius),
         clipBehavior: Clip.antiAlias,
         child: ListTile(
           contentPadding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppValues.defaultBorderRadius)),
           dense: true,
           leading: Container(
             width: 36,

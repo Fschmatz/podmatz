@@ -694,6 +694,10 @@ class LocalPodcastService {
 
     final updatedChapters = List<Chapter>.from(episode.chapters);
 
+    if (updatedChapters.isEmpty && chapter.startTime > Duration.zero) {
+      updatedChapters.add(const Chapter(title: 'Introdução', startTime: Duration.zero));
+    }
+
     if (oldChapter != null) {
       final idx = updatedChapters.indexWhere((c) => c.startTime == oldChapter.startTime && c.title == oldChapter.title);
       if (idx != -1) {

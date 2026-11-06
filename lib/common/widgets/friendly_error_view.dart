@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../values/app_values.dart';
+
 /// Friendly replacement for Flutter's red error screen, installed via
 /// [ErrorWidget.builder]. Release builds show no technical details; debug
 /// builds add the exception and stack trace. A long press anywhere copies
@@ -14,10 +16,7 @@ import 'package:flutter/services.dart';
 ///
 /// Depends only on the Flutter SDK, so it can be copied into any app as is.
 class FriendlyErrorView extends StatefulWidget {
-  const FriendlyErrorView({
-    super.key,
-    required this.details,
-  });
+  const FriendlyErrorView({super.key, required this.details});
 
   final FlutterErrorDetails details;
 
@@ -37,12 +36,7 @@ class _FriendlyErrorViewState extends State<FriendlyErrorView> {
 
   Future<void> _copy() async {
     HapticFeedback.mediumImpact();
-    await Clipboard.setData(
-      ClipboardData(
-        text:
-            '${widget.details.exceptionAsString()}\n\n${widget.details.stack}',
-      ),
-    );
+    await Clipboard.setData(ClipboardData(text: '${widget.details.exceptionAsString()}\n\n${widget.details.stack}'));
     if (!mounted) return;
     setState(() => _copied = true);
     _timer?.cancel();
@@ -71,30 +65,16 @@ class _FriendlyErrorViewState extends State<FriendlyErrorView> {
               onLongPress: _copy,
               child: LayoutBuilder(
                 builder: (context, c) {
-                  final bool full =
-                      c.maxHeight.isFinite &&
-                      c.maxHeight >= 320 &&
-                      c.maxWidth.isFinite &&
-                      c.maxWidth >= 300;
+                  final bool full = c.maxHeight.isFinite && c.maxHeight >= 320 && c.maxWidth.isFinite && c.maxWidth >= 300;
 
-                  // Only fill bounded axes; under unbounded constraints
-                  // (lists, FittedBox) the view sizes to its content.
                   return Container(
                     width: c.hasBoundedWidth ? c.maxWidth : null,
                     height: c.hasBoundedHeight ? c.maxHeight : null,
                     decoration: BoxDecoration(
                       color: cs.primaryContainer,
-                      borderRadius: BorderRadius.circular(full ? 0 : 28),
+                      borderRadius: BorderRadius.circular(full ? 0 : AppValues.defaultBorderRadius),
                     ),
-                    child: full
-                        ? _FullView(
-                            details: widget.details,
-                            copied: _copied,
-                          )
-                        : _CompactView(
-                            details: widget.details,
-                            copied: _copied,
-                          ),
+                    child: full ? _FullView(details: widget.details, copied: _copied) : _CompactView(details: widget.details, copied: _copied),
                   );
                 },
               ),
@@ -107,10 +87,7 @@ class _FriendlyErrorViewState extends State<FriendlyErrorView> {
 }
 
 class _FullView extends StatelessWidget {
-  const _FullView({
-    required this.details,
-    required this.copied,
-  });
+  const _FullView({required this.details, required this.copied});
 
   final FlutterErrorDetails details;
   final bool copied;
@@ -123,26 +100,18 @@ class _FullView extends StatelessWidget {
     final Widget header = Column(
       mainAxisSize: .min,
       children: [
-        _Badge(
-          size: 104,
-          copied: copied,
-        ),
+        _Badge(size: 104, copied: copied),
         const SizedBox(height: 24),
         Text(
           'Something went wrong',
           textAlign: TextAlign.center,
-          style: tt.titleLarge?.copyWith(
-            color: cs.onPrimaryContainer,
-            fontWeight: FontWeight.w700,
-          ),
+          style: tt.titleLarge?.copyWith(color: cs.onPrimaryContainer, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         Text(
           'Restarting the app should fix it.',
           textAlign: TextAlign.center,
-          style: tt.bodyMedium?.copyWith(
-            color: cs.onPrimaryContainer.withValues(alpha: 0.75),
-          ),
+          style: tt.bodyMedium?.copyWith(color: cs.onPrimaryContainer.withValues(alpha: 0.75)),
         ),
       ],
     );
@@ -167,12 +136,7 @@ class _FullView extends StatelessWidget {
               mainAxisAlignment: .center,
               children: [
                 header,
-                if (kDebugMode) ...[
-                  const SizedBox(height: 32),
-                  _DebugText(
-                    '${details.exceptionAsString()}\n\n${details.stack}',
-                  ),
-                ],
+                if (kDebugMode) ...[const SizedBox(height: 32), _DebugText('${details.exceptionAsString()}\n\n${details.stack}')],
               ],
             ),
           ),
@@ -183,10 +147,7 @@ class _FullView extends StatelessWidget {
 }
 
 class _CompactView extends StatelessWidget {
-  const _CompactView({
-    required this.details,
-    required this.copied,
-  });
+  const _CompactView({required this.details, required this.copied});
 
   final FlutterErrorDetails details;
   final bool copied;
@@ -201,20 +162,10 @@ class _CompactView extends StatelessWidget {
           child: Column(
             mainAxisSize: .min,
             children: [
-              _Badge(
-                size: 48,
-                copied: copied,
-              ),
+              _Badge(size: 48, copied: copied),
               if (kDebugMode) ...[
                 const SizedBox(height: 8),
-                SizedBox(
-                  width: 240,
-                  child: _DebugText(
-                    details.exceptionAsString(),
-                    maxLines: 2,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+                SizedBox(width: 240, child: _DebugText(details.exceptionAsString(), maxLines: 2, textAlign: TextAlign.center)),
               ],
             ],
           ),
@@ -227,10 +178,7 @@ class _CompactView extends StatelessWidget {
 /// The badge briefly swaps its "!" for a check after the hidden long-press
 /// copy gesture, so regular users never see a hint.
 class _Badge extends StatelessWidget {
-  const _Badge({
-    required this.size,
-    required this.copied,
-  });
+  const _Badge({required this.size, required this.copied});
 
   final double size;
   final bool copied;
@@ -246,21 +194,11 @@ class _Badge extends StatelessWidget {
         color: cs.primary,
         // A soft flower built with the SDK's StarBorder, so this file needs
         // no shape package.
-        shape: const StarBorder(
-          points: 12,
-          innerRadiusRatio: 0.8,
-          pointRounding: 0.7,
-          valleyRounding: 0.3,
-        ),
+        shape: const StarBorder(points: 12, innerRadiusRatio: 0.8, pointRounding: 0.7, valleyRounding: 0.3),
       ),
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
-        child: Icon(
-          copied ? Icons.check_rounded : Icons.priority_high_rounded,
-          key: ValueKey<bool>(copied),
-          color: cs.onPrimary,
-          size: size * 0.4,
-        ),
+        child: Icon(copied ? Icons.check_rounded : Icons.priority_high_rounded, key: ValueKey<bool>(copied), color: cs.onPrimary, size: size * 0.4),
       ),
     );
   }

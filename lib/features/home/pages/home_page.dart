@@ -60,6 +60,16 @@ class _HomePageState extends State<HomePage> {
     Navigator.of(context).push(PlayerPage.route(episode));
   }
 
+  void _onEpisodeLongPress(Episode episode) {
+    final cubit = locator<AudioPlayerCubit>();
+    final isCurrent = cubit.state.currentEpisode?.filePath == episode.filePath;
+    if (isCurrent) {
+      cubit.togglePlayPause();
+    } else {
+      cubit.playEpisode(episode);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
@@ -126,7 +136,6 @@ class _HomePageState extends State<HomePage> {
                 buildWhen: (prev, curr) =>
                     prev.episodes != curr.episodes ||
                     prev.groupFoldersView != curr.groupFoldersView ||
-                    prev.showCardProgress != curr.showCardProgress ||
                     prev.isPlaying != curr.isPlaying ||
                     prev.currentEpisode?.filePath != curr.currentEpisode?.filePath,
                 builder: (context, listState) {
@@ -147,10 +156,10 @@ class _HomePageState extends State<HomePage> {
                           padding: const EdgeInsets.only(bottom: 8),
                           child: EpisodeCard(
                             episode: ep,
-                            playing: isCurrent && listState.isPlaying,
-                            showProgress: listState.showCardProgress,
+                            playing: isCurrent,
                             isGroupFoldersView: false,
                             onTap: () => _openPlayer(context, ep),
+                            onLongPress: () => _onEpisodeLongPress(ep),
                           ),
                         );
                       },
@@ -179,16 +188,16 @@ class _HomePageState extends State<HomePage> {
                       final groupList = [...groupedEpisodes[groupName]!]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
                       final bool isExpanded = _openGroupName == groupName;
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.only(bottom: 8),
                         child: FolderGroupTile(
                           groupName: groupName,
                           episodes: groupList,
                           isExpanded: isExpanded,
                           currentEpisodeFilePath: listState.currentEpisode?.filePath,
                           isPlaying: listState.isPlaying,
-                          showCardProgress: listState.showCardProgress,
                           onToggle: () => _toggleGroup(groupName),
                           onEpisodeTap: (ep) => _openPlayer(context, ep),
+                          onEpisodeLongPress: (ep) => _onEpisodeLongPress(ep),
                         ),
                       );
                     },

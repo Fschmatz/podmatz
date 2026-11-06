@@ -16,10 +16,10 @@ class CurrentChapterCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppValues.defaultBorderRadius),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(color: cs.surfaceContainerHigh, borderRadius: BorderRadius.circular(16)),
+        decoration: BoxDecoration(color: cs.surfaceContainerHigh, borderRadius: BorderRadius.circular(AppValues.defaultBorderRadius)),
         child: Row(
           children: [
             Icon(Icons.bookmarks_rounded, size: 20, color: cs.primary),
@@ -29,10 +29,6 @@ class CurrentChapterCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  /* Text(
-                    'Capítulo Atual',
-                    style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant, fontWeight: FontWeight.w600),
-                  ), */
                   Text(
                     currentChapterTitle ?? 'Capítulos ($chaptersCount)',
                     style: tt.bodyMedium?.copyWith(color: cs.onSurface, fontWeight: FontWeight.bold),

@@ -37,7 +37,7 @@ class MenuTile extends StatelessWidget {
 
     return Material(
       color: background ?? cs.surfaceContainer,
-      shape: RoundedRectangleBorder(borderRadius: borderRadius ?? BorderRadius.circular(MenuSection.innerRadius)),
+      shape: RoundedRectangleBorder(borderRadius: borderRadius ?? BorderRadius.circular(AppValues.innerBorderRadius)),
       clipBehavior: .antiAlias,
       child: InkWell(
         onTap: onTap,

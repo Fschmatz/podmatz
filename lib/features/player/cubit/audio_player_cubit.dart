@@ -17,8 +17,8 @@ class AudioPlayerState {
     this.seekIntervalSeconds = 15,
     this.playbackSpeed = 1.0,
     this.groupFoldersView = true,
-    this.showCardProgress = true,
     this.showEpisodeCover = true,
+    this.compactCards = false,
     this.skipSilence = false,
   });
 
@@ -32,8 +32,8 @@ class AudioPlayerState {
   final int seekIntervalSeconds;
   final double playbackSpeed;
   final bool groupFoldersView;
-  final bool showCardProgress;
   final bool showEpisodeCover;
+  final bool compactCards;
   final bool skipSilence;
 
   AudioPlayerState copyWith({
@@ -47,8 +47,8 @@ class AudioPlayerState {
     int? seekIntervalSeconds,
     double? playbackSpeed,
     bool? groupFoldersView,
-    bool? showCardProgress,
     bool? showEpisodeCover,
+    bool? compactCards,
     bool? skipSilence,
   }) {
     return AudioPlayerState(
@@ -62,8 +62,8 @@ class AudioPlayerState {
       seekIntervalSeconds: seekIntervalSeconds ?? this.seekIntervalSeconds,
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
       groupFoldersView: groupFoldersView ?? this.groupFoldersView,
-      showCardProgress: showCardProgress ?? this.showCardProgress,
       showEpisodeCover: showEpisodeCover ?? this.showEpisodeCover,
+      compactCards: compactCards ?? this.compactCards,
       skipSilence: skipSilence ?? this.skipSilence,
     );
   }
@@ -172,16 +172,16 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     final seekInterval = await PreferencesHelper.getSeekIntervalSeconds();
     final speed = await PreferencesHelper.getPlaybackSpeed();
     final groupFolders = await PreferencesHelper.getGroupFoldersView();
-    final showProgress = await PreferencesHelper.getShowCardProgress();
     final showCover = await PreferencesHelper.getShowEpisodeCover();
+    final compactCards = await PreferencesHelper.getCompactCards();
     final skipSilence = await PreferencesHelper.getSkipSilence();
 
     emit(state.copyWith(
       seekIntervalSeconds: seekInterval,
       playbackSpeed: speed,
       groupFoldersView: groupFolders,
-      showCardProgress: showProgress,
       showEpisodeCover: showCover,
+      compactCards: compactCards,
       skipSilence: skipSilence,
     ));
 
@@ -199,14 +199,14 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     emit(state.copyWith(groupFoldersView: enabled));
   }
 
-  Future<void> setShowCardProgress(bool enabled) async {
-    await PreferencesHelper.setShowCardProgress(enabled);
-    emit(state.copyWith(showCardProgress: enabled));
-  }
-
   Future<void> setShowEpisodeCover(bool enabled) async {
     await PreferencesHelper.setShowEpisodeCover(enabled);
     emit(state.copyWith(showEpisodeCover: enabled));
+  }
+
+  Future<void> setCompactCards(bool enabled) async {
+    await PreferencesHelper.setCompactCards(enabled);
+    emit(state.copyWith(compactCards: enabled));
   }
 
   Future<void> setSkipSilence(bool enabled) async {
@@ -491,21 +491,28 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     if (episode.filePath == null) return;
 
     if (state.currentEpisode?.filePath == episode.filePath) {
+      final bool isCompleted = _audioPlayer.processingState == ProcessingState.completed ||
+          (state.duration > Duration.zero && state.position >= state.duration - const Duration(seconds: 1));
+
       if (_isSourceLoaded) {
-        // Source is loaded — just toggle play/pause
         if (state.isPlaying) {
           await _handler.pause();
         } else {
+          if (isCompleted) {
+            await seek(Duration.zero);
+          }
           await _handler.play();
         }
         return;
       }
       // Source NOT loaded (cold restore) — load file and seek to saved position
-      final savedPosition = state.position;
+      final savedPosition = (state.duration > Duration.zero && state.position >= state.duration - const Duration(seconds: 1))
+          ? Duration.zero
+          : state.position;
       final effectiveSpeed = episode.customSpeed ?? state.playbackSpeed;
       final effectiveSkipSilence = episode.skipSilenceOverride ?? state.skipSilence;
       try {
-        emit(state.copyWith(isPlaying: true));
+        emit(state.copyWith(isPlaying: true, position: savedPosition));
         await _handler.prepareAndPlay(
           item: _createMediaItem(episode),
           filePath: episode.filePath!,
@@ -527,7 +534,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
     await PreferencesHelper.setLastPlayedPath(episode.filePath!);
     final savedPosSec = await PreferencesHelper.getEpisodePositionSeconds(episode.filePath!);
-    final initialPos = Duration(seconds: savedPosSec);
+    Duration initialPos = Duration(seconds: savedPosSec);
+    if (episode.total > Duration.zero && initialPos >= episode.total - const Duration(seconds: 1)) {
+      initialPos = Duration.zero;
+      await PreferencesHelper.setEpisodePositionSeconds(episode.filePath!, 0);
+    }
 
     final updatedCurrent = episode.copyWith(listened: initialPos);
     final effectiveSpeed = updatedCurrent.customSpeed ?? state.playbackSpeed;
@@ -578,6 +589,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     if (state.isPlaying) {
       await _handler.pause();
     } else {
+      final bool isCompleted = _audioPlayer.processingState == ProcessingState.completed ||
+          (state.duration > Duration.zero && state.position >= state.duration - const Duration(seconds: 1));
+      if (isCompleted) {
+        await seek(Duration.zero);
+      }
       await _handler.play();
     }
   }

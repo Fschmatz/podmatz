@@ -42,24 +42,13 @@ class HomeMiniPlayerCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppValues.specialBorderRadius),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Stack(
         children: [
-          /* Positioned(
-            top: -30,
-            right: -30,
-            child: Opacity(
-              opacity: 0.12,
-              child: ClipPath(
-                clipper: ShapeBorderClipper(shape: MaterialShapeBorder(shape: MaterialShapes.sunny)),
-                child: SizedBox(width: 130, height: 130, child: ColoredBox(color: cs.onSecondaryContainer)),
-              ),
-            ),
-          ),*/
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 16, 12, 16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
             child: Row(
               children: [
                 Expanded(
