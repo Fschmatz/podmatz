@@ -13,6 +13,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String? _openGroupName;
+  String? _lastClosingGroupName;
+  final Map<String, List<Episode>> _lastGroupEpisodes = {};
   final ScrollController _scrollController = ScrollController();
   double? _lockedScrollOffset;
   bool _suppressScrollLock = false;
@@ -42,11 +44,40 @@ class _HomePageState extends State<HomePage> {
     final isExpanded = _openGroupName == groupName;
     // Lock the scroll at the current position before the expansion
     _lockedScrollOffset = _scrollController.hasClients ? _scrollController.offset : null;
-    setState(() => _openGroupName = isExpanded ? null : groupName);
+    setState(() {
+      if (isExpanded) {
+        _lastClosingGroupName = groupName;
+        _openGroupName = null;
+      } else {
+        _lastClosingGroupName = _openGroupName;
+        _openGroupName = groupName;
+      }
+    });
     // Release the lock after the animation finishes
     Future.delayed(const Duration(milliseconds: 350), () {
-      if (mounted) _lockedScrollOffset = null;
+      if (mounted) {
+        _lockedScrollOffset = null;
+        if (_lastClosingGroupName != null) {
+          setState(() => _lastClosingGroupName = null);
+        }
+      }
     });
+  }
+
+  BorderRadius _episodeRadius(int index, int total) {
+    const Radius outer = Radius.circular(AppValues.defaultBorderRadius);
+    const Radius inner = Radius.circular(AppValues.innerBorderRadius);
+
+    if (total == 1) {
+      return const BorderRadius.all(outer);
+    }
+    if (index == 0) {
+      return const BorderRadius.vertical(top: outer, bottom: inner);
+    }
+    if (index == total - 1) {
+      return const BorderRadius.vertical(top: inner, bottom: outer);
+    }
+    return const BorderRadius.all(inner);
   }
 
   @override
@@ -178,26 +209,98 @@ class _HomePageState extends State<HomePage> {
                       return a.compareTo(b);
                     });
 
+                  final List<List<String>> folderRows = [];
+                  for (int i = 0; i < sortedGroupKeys.length; i += 2) {
+                    folderRows.add(sortedGroupKeys.sublist(i, (i + 2 > sortedGroupKeys.length) ? sortedGroupKeys.length : i + 2));
+                  }
+
                   return ListView.builder(
                     controller: _scrollController,
                     scrollCacheExtent: ScrollCacheExtent.pixels(600.0),
                     padding: EdgeInsets.fromLTRB(16, 0, 16, listBottomPadding),
-                    itemCount: sortedGroupKeys.length,
-                    itemBuilder: (context, groupIndex) {
-                      final groupName = sortedGroupKeys[groupIndex];
-                      final groupList = [...groupedEpisodes[groupName]!]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
-                      final bool isExpanded = _openGroupName == groupName;
+                    itemCount: folderRows.length,
+                    itemBuilder: (context, rowIndex) {
+                      final row = folderRows[rowIndex];
+                      final firstFolder = row[0];
+                      final secondFolder = row.length > 1 ? row[1] : null;
+
+                      final bool isFirstExpanded = _openGroupName == firstFolder;
+                      final bool isSecondExpanded = secondFolder != null && _openGroupName == secondFolder;
+                      final bool isRowExpanded = isFirstExpanded || isSecondExpanded;
+
+                      final bool isFirstClosing = _lastClosingGroupName == firstFolder;
+                      final bool isSecondClosing = secondFolder != null && _lastClosingGroupName == secondFolder;
+
+                      // Mantém em cache a lista de episódios da pasta da linha para animar suavemente ao fechar
+                      for (final f in [firstFolder, ?secondFolder]) {
+                        if (groupedEpisodes[f] != null) {
+                          _lastGroupEpisodes[f] = [...groupedEpisodes[f]!]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+                        }
+                      }
+
+                      // Se a linha estiver aberta, usa a pasta aberta.
+                      // Se estiver fechando esta linha, usa a pasta que estava aberta nesta linha.
+                      final String? activeFolder = isFirstExpanded
+                          ? firstFolder
+                          : (isSecondExpanded ? secondFolder : (isFirstClosing ? firstFolder : (isSecondClosing ? secondFolder : null)));
+
+                      final List<Episode> displayEpisodes = (activeFolder != null ? _lastGroupEpisodes[activeFolder] : null) ?? const [];
+
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),
-                        child: FolderGroupTile(
-                          groupName: groupName,
-                          episodes: groupList,
-                          isExpanded: isExpanded,
-                          currentEpisodeFilePath: listState.currentEpisode?.filePath,
-                          isPlaying: listState.isPlaying,
-                          onToggle: () => _toggleGroup(groupName),
-                          onEpisodeTap: (ep) => _openPlayer(context, ep),
-                          onEpisodeLongPress: (ep) => _onEpisodeLongPress(ep),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: FolderGridCard(
+                                    groupName: firstFolder,
+                                    episodeCount: groupedEpisodes[firstFolder]?.length ?? 0,
+                                    isSelected: isFirstExpanded,
+                                    onTap: () => _toggleGroup(firstFolder),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: secondFolder != null
+                                      ? FolderGridCard(
+                                          groupName: secondFolder,
+                                          episodeCount: groupedEpisodes[secondFolder]?.length ?? 0,
+                                          isSelected: isSecondExpanded,
+                                          onTap: () => _toggleGroup(secondFolder),
+                                        )
+                                      : const SizedBox.shrink(),
+                                ),
+                              ],
+                            ),
+                            ClipRect(
+                              child: AnimatedAlign(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                                alignment: Alignment.topCenter,
+                                heightFactor: isRowExpanded ? 1.0 : 0.0,
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(0, 8, 0, 2),
+                                  child: Column(
+                                    children: [
+                                      for (int i = 0; i < displayEpisodes.length; i++) ...[
+                                        AppValues.tileGap.gap,
+                                        EpisodeCard(
+                                          episode: displayEpisodes[i],
+                                          playing: listState.currentEpisode?.filePath == displayEpisodes[i].filePath,
+                                          isGroupFoldersView: true,
+                                          borderRadius: _episodeRadius(i, displayEpisodes.length),
+                                          onTap: () => _openPlayer(context, displayEpisodes[i]),
+                                          onLongPress: () => _onEpisodeLongPress(displayEpisodes[i]),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     },

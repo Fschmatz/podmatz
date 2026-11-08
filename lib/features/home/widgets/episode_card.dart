@@ -60,7 +60,7 @@ class _EpisodeCardState extends State<EpisodeCard> {
     final int titleMaxLines = widget.isCompact ? 1 : 2;
     final TextStyle? titleStyle = widget.isCompact ? tt.titleSmall : tt.titleMedium;
     final double coverSize = widget.isCompact ? AppValues.coverSizeCompact : AppValues.coverSize;
-    final EdgeInsetsGeometry cardPadding = EdgeInsets.fromLTRB(16, 12, 16, 12);
+    final EdgeInsetsGeometry cardPadding = EdgeInsets.fromLTRB(16, 16, 16, 16);
 
     return Padding(
       padding: cardPadding,
@@ -83,8 +83,8 @@ class _EpisodeCardState extends State<EpisodeCard> {
                     _Cover(episode: episode, scheme: cs),
                     if (widget.playing)
                       Container(
-                        color: Colors.black.withValues(alpha: 0.35),
-                        child: Center(child: Icon(Icons.play_arrow_rounded, color: cs.primary, size: 32)),
+                        color: Colors.black.withValues(alpha: 0.6),
+                        child: Center(child: Icon(Icons.play_arrow_rounded, color: cs.primary, size: 40)),
                       ),
                   ],
                 ),
@@ -99,7 +99,7 @@ class _EpisodeCardState extends State<EpisodeCard> {
               children: [
                 Text(
                   episode.title,
-                  style: titleStyle?.copyWith(color: fg, fontWeight: FontWeight.w500),
+                  style: titleStyle?.copyWith(color: fg, fontWeight: FontWeight.w600),
                   maxLines: titleMaxLines,
                   overflow: TextOverflow.ellipsis,
                 ),
