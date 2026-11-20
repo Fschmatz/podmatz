@@ -49,10 +49,7 @@ class ChaptersBottomSheet extends StatelessWidget {
                     child: Container(
                       width: 40,
                       height: 4,
-                      decoration: BoxDecoration(
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
+                      decoration: BoxDecoration(color: cs.onSurfaceVariant.withValues(alpha: 0.4), borderRadius: BorderRadius.circular(2)),
                     ),
                   ),
                   16.gap,
@@ -70,51 +67,56 @@ class ChaptersBottomSheet extends StatelessWidget {
                   Expanded(
                     child: activeEpisode.chapters.isEmpty
                         ? Center(
-                            child: Text(
-                              'Nenhum capítulo cadastrado.',
-                              style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-                            ),
+                            child: Text('Nenhum capítulo cadastrado.', style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
                           )
-                        : ListView.builder(
+                        : ListView(
                             controller: scrollController,
-                            itemCount: activeEpisode.chapters.length,
-                            itemBuilder: (context, index) {
-                              final Chapter chapter = activeEpisode.chapters[index];
-                              final bool isActive = (index == activeEpisode.chapters.length - 1)
-                                  ? currentPos >= chapter.startTime
-                                  : (currentPos >= chapter.startTime && currentPos < activeEpisode.chapters[index + 1].startTime);
-
-                              return ChapterTile(
-                                chapter: chapter,
-                                index: index,
-                                isActive: isActive,
-                                scheme: cs,
-                                onEdit: () {
-                                  AddChapterDialog.show(
-                                    context,
-                                    episode: activeEpisode,
-                                    initialTime: chapter.startTime,
-                                    initialChapter: chapter,
-                                  );
-                                },
-                                onDelete: () {
-                                  locator<AudioPlayerCubit>().deleteChapter(
-                                    episode: activeEpisode,
-                                    chapter: chapter,
-                                  );
-                                },
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  if (isCurrent) {
-                                    locator<AudioPlayerCubit>().seek(chapter.startTime);
-                                  } else {
-                                    locator<AudioPlayerCubit>().playEpisode(activeEpisode).then((_) {
-                                      locator<AudioPlayerCubit>().seek(chapter.startTime);
-                                    });
-                                  }
-                                },
-                              );
-                            },
+                            children: [
+                              SegmentedWidgetList(
+                                largeRadius: AppValues.defaultBorderRadius,
+                                smallRadius: AppValues.innerBorderRadius,
+                                gap: AppValues.tileGap,
+                                children: [
+                                  for (int index = 0; index < activeEpisode.chapters.length; index++) ...[
+                                    Builder(
+                                      builder: (context) {
+                                        final Chapter chapter = activeEpisode.chapters[index];
+                                        final bool isActive = (index == activeEpisode.chapters.length - 1)
+                                            ? currentPos >= chapter.startTime
+                                            : (currentPos >= chapter.startTime && currentPos < activeEpisode.chapters[index + 1].startTime);
+                                        return ChapterTile(
+                                          chapter: chapter,
+                                          index: index,
+                                          isActive: isActive,
+                                          scheme: cs,
+                                          onEdit: () {
+                                            AddChapterDialog.show(
+                                              context,
+                                              episode: activeEpisode,
+                                              initialTime: chapter.startTime,
+                                              initialChapter: chapter,
+                                            );
+                                          },
+                                          onDelete: () {
+                                            locator<AudioPlayerCubit>().deleteChapter(episode: activeEpisode, chapter: chapter);
+                                          },
+                                          onTap: () {
+                                            Navigator.pop(context);
+                                            if (isCurrent) {
+                                              locator<AudioPlayerCubit>().seek(chapter.startTime);
+                                            } else {
+                                              locator<AudioPlayerCubit>().playEpisode(activeEpisode).then((_) {
+                                                locator<AudioPlayerCubit>().seek(chapter.startTime);
+                                              });
+                                            }
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
                           ),
                   ),
                 ],

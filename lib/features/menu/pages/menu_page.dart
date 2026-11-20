@@ -142,138 +142,126 @@ class _BodyState extends State<_Body> {
         final String folderPath = playerState.folderPath ?? 'Nenhuma pasta selecionada';
 
         return ListView(
-          padding: EdgeInsets.fromLTRB(16, 8, 16, BottomPadding.of(context)),
+          padding: EdgeInsets.fromLTRB(0, 8, 0, BottomPadding.of(context)),
           children: [
-            Card(
-              margin: const EdgeInsets.fromLTRB(0, 0, 0, 24),
-              elevation: 0,
-              color: Theme.of(context).colorScheme.primaryContainer,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppValues.specialBorderRadius)),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
-                child: Column(
-                  children: [
-                    Text(
-                      AppValues.title,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onPrimaryContainer),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Version ${AppValues.version}',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.8)),
-                    ),
-                  ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Card(
+                margin: EdgeInsets.zero,
+                elevation: 0,
+                color: Theme.of(context).colorScheme.primaryContainer,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppValues.specialBorderRadius)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+                  child: Column(
+                    children: [
+                      Text(
+                        AppValues.title,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onPrimaryContainer),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Version ${AppValues.version}',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.8)),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-            MenuSection(
-              label: 'Aparência',
+            SectionSegmentedWidgetList(
+              title: 'Aparência',
               children: [
-                MenuTile(
-                  icon: Icons.brightness_6_outlined,
-                  title: 'Tema Escuro',
-                  trailing: BlocBuilder<ThemeModeCubit, ThemeMode>(
-                    bloc: locator<ThemeModeCubit>(),
-                    builder: (context, state) {
-                      final ThemeMode themeMode = state;
-
-                      return Switch(
-                        value: themeMode == ThemeMode.dark,
-                        thumbIcon: const WidgetStateProperty<Icon?>.fromMap({
-                          WidgetState.selected: Icon(Icons.dark_mode_rounded),
-                          WidgetState.any: Icon(Icons.light_mode_rounded),
-                        }),
-                        onChanged: (_) {
-                          locator<ThemeModeCubit>().toggle();
-                        },
-                      );
-                    },
-                  ),
+                BlocBuilder<ThemeModeCubit, ThemeMode>(
+                  bloc: locator<ThemeModeCubit>(),
+                  builder: (context, themeMode) {
+                    return SwitchListTile(
+                      secondary: const Icon(Icons.brightness_6_outlined),
+                      title: const Text('Tema Escuro'),
+                      thumbIcon: const WidgetStateProperty<Icon?>.fromMap({
+                        WidgetState.selected: Icon(Icons.dark_mode_rounded),
+                        WidgetState.any: Icon(Icons.light_mode_rounded),
+                      }),
+                      value: themeMode == ThemeMode.dark,
+                      onChanged: (_) {
+                        locator<ThemeModeCubit>().toggle();
+                      },
+                    );
+                  },
                 ),
-                MenuTile(
-                  icon: Icons.folder_copy_outlined,
-                  title: 'Agrupar por Pastas',
-                  subtitle: 'Exibir podcasts por pasta na tela inicial',
-                  trailing: Switch(
-                    value: playerState.groupFoldersView,
-                    onChanged: (val) {
-                      locator<AudioPlayerCubit>().setGroupFoldersView(val);
-                    },
-                  ),
+                SwitchListTile(
+                  secondary: const Icon(Icons.folder_copy_outlined),
+                  title: const Text('Agrupar por Pastas'),
+                  subtitle: const Text('Exibir podcasts por pasta na tela inicial'),
+                  value: playerState.groupFoldersView,
+                  onChanged: (val) {
+                    locator<AudioPlayerCubit>().setGroupFoldersView(val);
+                  },
                 ),
-                MenuTile(
-                  icon: Icons.image_outlined,
-                  title: 'Capa nos Cards',
-                  subtitle: 'Exibir a capa do episódio nos cards',
-                  trailing: Switch(
-                    value: playerState.showEpisodeCover,
-                    onChanged: (val) {
-                      locator<AudioPlayerCubit>().setShowEpisodeCover(val);
-                    },
-                  ),
+                SwitchListTile(
+                  secondary: const Icon(Icons.image_outlined),
+                  title: const Text('Capa nos Cards'),
+                  subtitle: const Text('Exibir a capa do episódio nos cards'),
+                  value: playerState.showEpisodeCover,
+                  onChanged: (val) {
+                    locator<AudioPlayerCubit>().setShowEpisodeCover(val);
+                  },
                 ),
-                MenuTile(
-                  icon: Icons.view_agenda_outlined,
-                  title: 'Cards Compactos',
-                  subtitle: 'Exibir cards em formato compacto',
-                  trailing: Switch(
-                    value: playerState.compactCards,
-                    onChanged: (val) {
-                      locator<AudioPlayerCubit>().setCompactCards(val);
-                    },
-                  ),
+                SwitchListTile(
+                  secondary: const Icon(Icons.view_agenda_outlined),
+                  title: const Text('Cards Compactos'),
+                  subtitle: const Text('Exibir cards em formato compacto'),
+                  value: playerState.compactCards,
+                  onChanged: (val) {
+                    locator<AudioPlayerCubit>().setCompactCards(val);
+                  },
                 ),
               ],
             ),
-
-            32.gap,
-            MenuSection(
-              label: 'Player',
+            SectionSegmentedWidgetList(
+              title: 'Player',
               children: [
-                MenuTile(
-                  icon: Icons.timer_outlined,
-                  title: 'Pulo de Tempo (Forward / Rewind)',
-                  subtitle: '${playerState.seekIntervalSeconds} segundos',
+                ListTile(
+                  leading: const Icon(Icons.timer_outlined),
+                  title: const Text('Pulo de Tempo (Forward / Rewind)'),
+                  subtitle: Text('${playerState.seekIntervalSeconds} segundos'),
                   onTap: () => _showSeekIntervalDialog(context, playerState.seekIntervalSeconds),
                 ),
-                MenuTile(
-                  icon: Icons.speed_outlined,
-                  title: 'Velocidade de Reprodução',
-                  subtitle: '${playerState.playbackSpeed}x',
+                ListTile(
+                  leading: const Icon(Icons.speed_outlined),
+                  title: const Text('Velocidade de Reprodução'),
+                  subtitle: Text('${playerState.playbackSpeed}x'),
                   onTap: () => _showPlaybackSpeedDialog(context, playerState.playbackSpeed),
                 ),
-                MenuTile(
-                  icon: Icons.volume_off_outlined,
-                  title: 'Pular Silêncio',
-                  subtitle: 'Remover trechos silenciosos automaticamente',
-                  trailing: Switch(
-                    value: playerState.skipSilence,
-                    onChanged: (val) {
-                      locator<AudioPlayerCubit>().setSkipSilence(val);
-                    },
-                  ),
+                SwitchListTile(
+                  secondary: const Icon(Icons.volume_off_outlined),
+                  title: const Text('Pular Silêncio'),
+                  subtitle: const Text('Remover trechos silenciosos automaticamente'),
+                  value: playerState.skipSilence,
+                  onChanged: (val) {
+                    locator<AudioPlayerCubit>().setSkipSilence(val);
+                  },
                 ),
               ],
             ),
-            32.gap,
-            MenuSection(
-              label: 'Biblioteca',
+            SectionSegmentedWidgetList(
+              title: 'Biblioteca',
               children: [
-                MenuTile(
-                  icon: Icons.folder_outlined,
-                  title: 'Pasta de Podcasts',
-                  subtitle: folderPath,
+                ListTile(
+                  leading: const Icon(Icons.folder_outlined),
+                  title: const Text('Pasta de Podcasts'),
+                  subtitle: Text(folderPath),
                   onTap: () {
                     locator<AudioPlayerCubit>().pickFolder();
                   },
                 ),
-                MenuTile(
-                  icon: Icons.refresh_outlined,
-                  title: 'Re-escanear Pasta',
+                ListTile(
+                  leading: const Icon(Icons.refresh_outlined),
+                  title: const Text('Re-escanear Pasta'),
                   trailing: _isScanning ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : null,
                   onTap: _isScanning
                       ? null
@@ -287,7 +275,6 @@ class _BodyState extends State<_Body> {
                 ),
               ],
             ),
-            64.gap,
           ],
         );
       },

@@ -38,10 +38,10 @@ class _EpisodeCardState extends State<EpisodeCard> {
 
     return Container(
       clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: effectiveRadius),
+      decoration: BoxDecoration(color: widget.playing ? cs.secondaryContainer : cs.surfaceContainerHighest, borderRadius: effectiveRadius),
       child: Stack(
         children: [
-          _content(context, cs, cs.onSurface, showCover),
+          _content(context, cs, showCover),
 
           Positioned.fill(
             child: Material(
@@ -54,13 +54,14 @@ class _EpisodeCardState extends State<EpisodeCard> {
     );
   }
 
-  Widget _content(BuildContext context, ColorScheme cs, Color fg, bool showCover) {
+  Widget _content(BuildContext context, ColorScheme cs, bool showCover) {
     final Episode episode = widget.episode;
     final TextTheme tt = Theme.of(context).textTheme;
     final int titleMaxLines = widget.isCompact ? 1 : 2;
     final TextStyle? titleStyle = widget.isCompact ? tt.titleSmall : tt.titleMedium;
     final double coverSize = widget.isCompact ? AppValues.coverSizeCompact : AppValues.coverSize;
-    final EdgeInsetsGeometry cardPadding = EdgeInsets.fromLTRB(16, 16, 16, 16);
+    final EdgeInsetsGeometry cardPadding = EdgeInsets.fromLTRB(16, 14, 16, 14);
+    final Color subtitleColor = cs.onSurface.withValues(alpha: 0.5);
 
     return Padding(
       padding: cardPadding,
@@ -70,10 +71,7 @@ class _EpisodeCardState extends State<EpisodeCard> {
             SingleMotionBuilder(
               motion: const MaterialSpringMotion.standardSpatialFast(),
               value: widget.playing ? 1.0 : 0.0,
-              builder: (context, t, child) => ClipPath(
-                clipper: ShapeBorderClipper(shape: ShapeValues.coverBorder(t)),
-                child: child,
-              ),
+              builder: (context, t, child) => ClipRRect(borderRadius: BorderRadius.circular(16), child: child),
               child: SizedBox(
                 width: coverSize,
                 height: coverSize,
@@ -83,7 +81,7 @@ class _EpisodeCardState extends State<EpisodeCard> {
                     _Cover(episode: episode, scheme: cs),
                     if (widget.playing)
                       Container(
-                        color: Colors.black.withValues(alpha: 0.6),
+                        color: Colors.black.withValues(alpha: 0.4),
                         child: Center(child: Icon(Icons.play_arrow_rounded, color: cs.primary, size: 40)),
                       ),
                   ],
@@ -99,7 +97,7 @@ class _EpisodeCardState extends State<EpisodeCard> {
               children: [
                 Text(
                   episode.title,
-                  style: titleStyle?.copyWith(color: fg, fontWeight: FontWeight.w600),
+                  style: titleStyle?.copyWith(color: cs.onSurface, fontWeight: FontWeight.w700),
                   maxLines: titleMaxLines,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -109,12 +107,26 @@ class _EpisodeCardState extends State<EpisodeCard> {
                     final String totalStr = episode.total.inSeconds > 0 ? episode.total.minutesLabel : '--:--';
                     final bool hasStarted = episode.listened.inMinutes >= 1;
                     final String timeText = hasStarted ? '${episode.listened.minutesLabel} / $totalStr' : totalStr;
+                    final Duration timeLeft = episode.total - episode.listened;
+                    final bool showTimeLeft = hasStarted && episode.total.inSeconds > 0 && timeLeft.inSeconds > 0;
 
-                    return Text(
-                      timeText,
-                      style: tt.bodySmall?.copyWith(color: fg.withValues(alpha: 0.5), fontWeight: FontWeight.w700),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    return Row(
+                      children: [
+                        Text(
+                          timeText,
+                          style: tt.bodySmall?.copyWith(color: subtitleColor, fontWeight: FontWeight.w700),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (showTimeLeft) ...[
+                          Text(
+                            '  •  Faltam ${timeLeft.minutesLabel}',
+                            style: tt.bodySmall?.copyWith(color: subtitleColor, fontWeight: FontWeight.w700),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
                     );
                   },
                 ),

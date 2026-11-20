@@ -84,9 +84,8 @@ class HomeMiniPlayerCard extends StatelessWidget {
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          8.gap,
                           Text(
-                            '•   Faltam $remainingStr',
+                            '  •  Faltam $remainingStr',
                             style: tt.bodySmall?.copyWith(
                               color: foregroundColor.withValues(alpha: textOpacity),
                               fontWeight: FontWeight.w700,

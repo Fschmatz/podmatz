@@ -64,21 +64,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  BorderRadius _episodeRadius(int index, int total) {
-    const Radius outer = Radius.circular(AppValues.defaultBorderRadius);
-    const Radius inner = Radius.circular(AppValues.innerBorderRadius);
-
-    if (total == 1) {
-      return const BorderRadius.all(outer);
-    }
-    if (index == 0) {
-      return const BorderRadius.vertical(top: outer, bottom: inner);
-    }
-    if (index == total - 1) {
-      return const BorderRadius.vertical(top: inner, bottom: outer);
-    }
-    return const BorderRadius.all(inner);
-  }
 
   @override
   void dispose() {
@@ -282,19 +267,20 @@ class _HomePageState extends State<HomePage> {
                                 heightFactor: isRowExpanded ? 1.0 : 0.0,
                                 child: Padding(
                                   padding: const EdgeInsets.fromLTRB(0, 8, 0, 2),
-                                  child: Column(
+                                  child: SegmentedWidgetList(
+                                    largeRadius: AppValues.defaultBorderRadius,
+                                    smallRadius: AppValues.innerBorderRadius,
+                                    gap: AppValues.tileGap,
                                     children: [
-                                      for (int i = 0; i < displayEpisodes.length; i++) ...[
-                                        AppValues.tileGap.gap,
+                                      for (final ep in displayEpisodes)
                                         EpisodeCard(
-                                          episode: displayEpisodes[i],
-                                          playing: listState.currentEpisode?.filePath == displayEpisodes[i].filePath,
+                                          episode: ep,
+                                          playing: listState.currentEpisode?.filePath == ep.filePath,
                                           isGroupFoldersView: true,
-                                          borderRadius: _episodeRadius(i, displayEpisodes.length),
-                                          onTap: () => _openPlayer(context, displayEpisodes[i]),
-                                          onLongPress: () => _onEpisodeLongPress(displayEpisodes[i]),
+                                          borderRadius: BorderRadius.zero,
+                                          onTap: () => _openPlayer(context, ep),
+                                          onLongPress: () => _onEpisodeLongPress(ep),
                                         ),
-                                      ],
                                     ],
                                   ),
                                 ),

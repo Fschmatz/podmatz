@@ -18,7 +18,7 @@ class FolderGridCard extends StatelessWidget {
     final TextTheme tt = Theme.of(context).textTheme;
 
     final Color normalBg = cs.surfaceContainer;
-    final Color openTintBg = Color.lerp(cs.surfaceContainerHighest, cs.primaryContainer, 0.45)!;
+    final Color openTintBg = Color.lerp(cs.surfaceContainerHighest, cs.primaryContainer, 0.6)!;
     final Color cardBg = isSelected ? openTintBg : normalBg;
 
     final Color folderContainer = isSelected ? cs.primaryContainer : cs.surfaceContainerHighest;
